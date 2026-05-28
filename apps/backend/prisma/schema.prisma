@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Candidato {
+  id            String      @id @default(cuid())
+  cpf           String      @unique
+  dataNasc      DateTime
+  nome          String
+  email         String
+  telefone      String
+  sexo          String
+  estadoCivil   String?
+  rg            String?
+  orgaoEmissor  String?
+  cep           String?
+  logradouro    String?
+  numero        String?
+  bairro        String?
+  cidade        String?
+  cargo         String
+  escola        String
+  matricula     String
+  municipio     String      @default("Oriximiná")
+  tempoServico  String?
+  formacao      String?
+  especializacao String?
+  inscricoes    Inscricao[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Inscricao {
+  id          String        @id @default(cuid())
+  protocolo   String        @unique @default(cuid())
+  candidatoId String
+  candidato   Candidato     @relation(fields: [candidatoId], references: [id])
+  etapas      EtapaStatus[]
+  createdAt   DateTime      @default(now())
+}
+
+model EtapaStatus {
+  id          String      @id @default(cuid())
+  inscricaoId String
+  inscricao   Inscricao   @relation(fields: [inscricaoId], references: [id])
+  etapa       EtapaTipo
+  status      StatusEtapa @default(PENDENTE)
+  pontuacao   Float?
+  observacao  String?
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([inscricaoId, etapa])
+}
+
+enum EtapaTipo {
+  HABILITACAO_DOCUMENTAL
+  AVALIACAO_COGNITIVA
+  QUALIFICACAO_CURRICULAR
+  PLANO_GESTAO
+  RESULTADO_FINAL
+  CERTIFICACAO
+}
+
+enum StatusEtapa {
+  PENDENTE
+  EM_ANALISE
+  APROVADO
+  REPROVADO
+}
