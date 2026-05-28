@@ -234,7 +234,7 @@ export default function ProcessFlow() {
         >
           <p className="text-sm text-gray-400">
             Cada etapa possui prazo definido pelo edital. O candidato é notificado automaticamente
-            sobre prazos e resultados.
+            sobre prazos e resultados na plataforma.
           </p>
         </motion.div>
       </div>
