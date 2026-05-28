@@ -36,10 +36,7 @@ services:
       - '3000'
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://backend:3001
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - NEXT_PUBLIC_API_URL=/api
     networks:
       - pdage-network
     restart: unless-stopped
@@ -62,7 +59,7 @@ services:
       - PORT=3001
       - DATABASE_URL=postgresql://pdage_user:pdage_password@postgres:5432/pdage_db
       - JWT_SECRET=${JWT_SECRET:-change_this_in_production}
-      - CORS_ORIGIN=https://pdage.obidos.pa.gov.br
+      - CORS_ORIGIN=*
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,8 +76,6 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: pdage-postgres
-    ports:
-      - '5432:5432'
     environment:
       - POSTGRES_USER=pdage_user
       - POSTGRES_PASSWORD=pdage_password
