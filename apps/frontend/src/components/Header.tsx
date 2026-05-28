@@ -9,7 +9,6 @@ const navLinks = [
   { label: 'Início', href: '#inicio' },
   { label: 'Sobre', href: '#sobre' },
   { label: 'Processo', href: '#processo' },
-  { label: 'Segurança', href: '#seguranca' },
 ];
 
 export default function Header() {
