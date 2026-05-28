@@ -53,8 +53,9 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Plataforma Digital de Avaliação para Gestores Escolares de Oriximiná/PA.
-              Desenvolvida pela SEMEG.
+              Plataforma Digital de Avaliação para Gestores Escolares de Oriximiná-PA.
+              Desenvolvida pela Secretaria de Eficiência Governamental - SEMEG, em 
+              parceria com Secretaria de Educação - SEMED.
             </p>
           </div>
 
@@ -108,7 +109,7 @@ export default function Footer() {
                   SEMED — Secretaria de Educação
                 </p>
                 <p className="text-xs text-gray-500">
-                  Desenvolvido pela SEMEG — Secretaria de Finanças e Governamental
+                  Desenvolvido pela SEMEG — Secretaria de Eficiência Governamental
                 </p>
                 <p className="text-sm text-gray-400 mt-1">Prefeitura Municipal de Oriximiná/PA</p>
               </div>

@@ -17,7 +17,7 @@ const steps = [
     icon: UserPlus,
     title: 'Cadastro e Inscrição',
     description:
-      'O candidato realiza sua inscrição online com preenchimento de dados pessoais, profissionais e funcionais. O sistema valida automaticamente informações e emite protocolo de inscrição.',
+      'O candidato realiza sua inscrição online com preenchimento de dados pessoais, profissionais e funcionais. O sistema emite o protocolo de inscrição e a comissão responsável valida a inscrição do candidato.',
     color: 'from-blue-600 to-blue-500',
     bgLight: 'bg-blue-50',
     textColor: 'text-blue-600',
@@ -195,7 +195,7 @@ export default function ProcessFlow() {
                 <motion.div
                   key={step.number}
                   variants={stepVariants}
-                  className="relative flex flex-col items-center text-center group"
+                  className="relative flex flex-col items-center text-center group h-full"
                 >
                   {/* Connector line */}
                   {index < steps.length - 1 && (
@@ -212,9 +212,9 @@ export default function ProcessFlow() {
                   </div>
 
                   {/* Content */}
-                  <div className={`rounded-xl p-4 ${step.bgLight} border ${step.borderColor} w-full`}>
+                  <div className={`rounded-xl p-4 ${step.bgLight} border ${step.borderColor} w-full flex-1`}>
                     <h3 className={`font-bold text-sm mb-2 ${step.textColor}`}>{step.title}</h3>
-                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-4">
+                    <p className="text-xs text-gray-600 leading-relaxed">
                       {step.description}
                     </p>
                   </div>

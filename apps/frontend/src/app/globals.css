@@ -49,10 +49,6 @@ body {
     box-sizing: border-box;
   }
 
-  ::selection {
-    background-color: rgba(255, 210, 31, 0.35);
-    color: #001b3d;
-  }
 }
 
 @layer components {

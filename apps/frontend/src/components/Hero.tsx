@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ArrowDown, FileText, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -24,9 +25,21 @@ export default function Hero() {
   return (
     <section
       id="inicio"
-      className="relative min-h-screen flex items-center overflow-hidden bg-white"
+      className="relative min-h-screen flex items-center overflow-hidden"
       style={{ borderBottom: '1px solid #e0e4ea' }}
     >
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/ferramentas-digitais.jpg"
+          alt=""
+          fill
+          className="object-cover object-center"
+          priority
+        />
+        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
+      </div>
+
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40 w-full text-center">
         {/* Main title */}
         <motion.h1
@@ -35,7 +48,7 @@ export default function Hero() {
           initial="hidden"
           animate="visible"
           className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6"
-          style={{ color: '#001b3d' }}
+          style={{ color: '#ffffff' }}
         >
           Plataforma Digital de{' '}
           <span style={{ color: '#38b6ff' }}>Avaliação</span>{' '}
@@ -49,11 +62,11 @@ export default function Hero() {
           initial="hidden"
           animate="visible"
           className="text-lg leading-relaxed max-w-2xl mx-auto mb-10"
-          style={{ color: '#666666' }}
+          style={{ color: '#e0e0e0' }}
         >
           Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores
           da educação municipal de{' '}
-          <span className="font-semibold" style={{ color: '#001b3d' }}>Oriximiná/PA</span>.
+          <span className="font-semibold" style={{ color: '#ffffff' }}>Oriximiná/PA</span>.
           Transparente, seguro e 100% online.
         </motion.p>
 
