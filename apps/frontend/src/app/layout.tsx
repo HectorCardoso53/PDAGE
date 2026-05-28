@@ -10,7 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Meritus — Plataforma Digital de Avaliação para Gestores Escolares',
+    default: 'Meritus — Plataforma Digital para Avaliação de Mérito e Desempenho',
     template: '%s | Meritus',
   },
   description:
@@ -39,22 +39,26 @@ export const metadata: Metadata = {
       follow: true,
     },
   },
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
-    url: 'https://pdage.oriximina.pa.gov.br',
+    url: 'https://meritus.oriximina.pa.gov.br',
     siteName: 'Meritus',
-    title: 'Meritus — Plataforma Digital de Avaliação para Gestores Escolares',
+    title: 'Meritus — Plataforma Digital para Avaliação de Mérito e Desempenho',
     description:
-      'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Óbidos/PA.',
+      'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Oriximiná/PA.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Meritus — Plataforma Digital de Avaliação para Gestores Escolares',
+    title: 'Meritus — Plataforma Digital para Avaliação de Mérito e Desempenho',
     description:
-      'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Óbidos/PA.',
+      'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Oriximiná/PA.',
   },
-  metadataBase: new URL('https://pdage.oriximina.pa.gov.br'),
+  metadataBase: new URL('https://meritus.oriximina.pa.gov.br'),
 };
 
 export const viewport: Viewport = {
