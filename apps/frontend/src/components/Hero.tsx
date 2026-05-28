@@ -37,7 +37,7 @@ export default function Hero() {
           className="object-cover object-[70%] sm:object-center"
           priority
         />
-        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
+        <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.70)' }} />
       </div>
 
       <div className="relative z-10 max-w-xl px-4 sm:px-6 lg:px-8 py-32 lg:py-40 text-left ml-8 lg:ml-24">
@@ -50,9 +50,8 @@ export default function Hero() {
           className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6"
           style={{ color: '#ffffff' }}
         >
-          Plataforma Digital para{' '}
-          <span style={{ color: '#38b6ff' }}>Avaliação</span>{' '}
-          de Mérito e Desempenho
+          <span className="block text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-2" style={{ color: '#38b6ff' }}>Meritus</span>
+          <span className="text-2xl sm:text-3xl lg:text-4xl font-medium">Plataforma Digital para Avaliação de Mérito e Desempenho</span>
         </motion.h1>
 
         {/* Subtitle */}
