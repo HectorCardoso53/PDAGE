@@ -73,7 +73,7 @@ export default function About() {
           className="text-center mb-14"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4" style={{ color: '#001b3d' }}>
-            Por que o PDAGE?
+            Por que o Meritus?
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
             Uma solução desenvolvida para modernizar e dar transparência ao processo de avaliação e

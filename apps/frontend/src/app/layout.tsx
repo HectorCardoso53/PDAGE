@@ -10,13 +10,13 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'PDAGE — Plataforma Digital de Avaliação para Gestores Escolares',
-    template: '%s | PDAGE',
+    default: 'Meritus — Plataforma Digital de Avaliação para Gestores Escolares',
+    template: '%s | Meritus',
   },
   description:
     'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Oriximiná/PA. Plataforma 100% digital, segura e em conformidade com a LGPD.',
   keywords: [
-    'PDAGE',
+    'Meritus',
     'gestores escolares',
     'avaliação',
     'certificação',
@@ -43,14 +43,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pt_BR',
     url: 'https://pdage.oriximina.pa.gov.br',
-    siteName: 'PDAGE',
-    title: 'PDAGE — Plataforma Digital de Avaliação para Gestores Escolares',
+    siteName: 'Meritus',
+    title: 'Meritus — Plataforma Digital de Avaliação para Gestores Escolares',
     description:
       'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Óbidos/PA.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PDAGE — Plataforma Digital de Avaliação para Gestores Escolares',
+    title: 'Meritus — Plataforma Digital de Avaliação para Gestores Escolares',
     description:
       'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Óbidos/PA.',
   },

@@ -31,16 +31,16 @@ export default function Hero() {
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/ferramentas-digitais.jpg"
+          src="/Gestao.png"
           alt=""
           fill
-          className="object-cover object-center"
+          className="object-cover object-[70%] sm:object-center"
           priority
         />
         <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} />
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-32 lg:py-40 w-full text-center">
+      <div className="relative z-10 max-w-xl px-4 sm:px-6 lg:px-8 py-32 lg:py-40 text-left ml-8 lg:ml-24">
         {/* Main title */}
         <motion.h1
           custom={0}
@@ -61,7 +61,7 @@ export default function Hero() {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="text-lg leading-relaxed max-w-2xl mx-auto mb-10"
+          className="text-lg leading-relaxed max-w-2xl mb-10"
           style={{ color: '#e0e0e0' }}
         >
           Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores
@@ -76,7 +76,7 @@ export default function Hero() {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="flex flex-col sm:flex-row gap-3 justify-center mb-12"
+          className="flex flex-col sm:flex-row gap-3 justify-start mb-12"
         >
           <button
             onClick={() => handleScroll('sobre')}

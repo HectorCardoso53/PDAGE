@@ -124,7 +124,7 @@ export default function ProcessFlow() {
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
             O processo é conduzido em 7 etapas sequenciais, cada uma com critérios claros e
-            pontuação transparente. Tudo gerenciado pela plataforma PDAGE.
+            pontuação transparente. Tudo gerenciado pela plataforma Meritus.
           </p>
         </motion.div>
 

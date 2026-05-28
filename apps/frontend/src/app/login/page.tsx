@@ -37,7 +37,7 @@ export default function LoginPage() {
           </div>
           <p className="text-gray-300 text-base leading-relaxed">
             Esta página está sendo desenvolvida. O sistema de autenticação estará disponível na
-            próxima fase do projeto PDAGE.
+            próxima fase do projeto Meritus.
           </p>
         </div>
 

@@ -43,7 +43,7 @@ export default function Header() {
               <div className="relative flex-shrink-0">
                 <Image
                   src="/logo.png"
-                  alt="Brasão de Oriximiná — PDAGE"
+                  alt="Brasão de Oriximiná — Meritus"
                   width={40}
                   height={40}
                   className="w-9 h-9 lg:w-10 lg:h-10 object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300"
@@ -52,7 +52,7 @@ export default function Header() {
               </div>
               <div className="flex flex-col items-start">
                 <span className="text-lg lg:text-xl font-bold leading-none tracking-tight text-white">
-                  PDAGE
+                  Meritus
                 </span>
                 <span className="text-[10px] lg:text-xs leading-none mt-0.5 hidden sm:block" style={{ color: '#ffffff' }}>
                   Gestores Escolares

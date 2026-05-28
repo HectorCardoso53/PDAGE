@@ -46,7 +46,7 @@ export default function Footer() {
                 <Image src="/logo.png" alt="Brasão de Oriximiná" width={40} height={40} className="w-full h-full object-contain" />
               </div>
               <div>
-                <span className="text-xl font-bold text-white leading-none block">PDAGE</span>
+                <span className="text-xl font-bold text-white leading-none block">Meritus</span>
                 <span className="text-[11px] text-gray-500 leading-none mt-0.5 block">
                   Gestores Escolares
                 </span>
