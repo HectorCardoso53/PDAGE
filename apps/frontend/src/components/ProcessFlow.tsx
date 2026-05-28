@@ -39,7 +39,7 @@ const steps = [
     icon: Brain,
     title: 'Avaliação Cognitiva',
     description:
-      'Prova objetiva aplicada de forma online sobre gestão escolar, legislação educacional, LDB, BNCC e normas municipais. Correção automática com resultado imediato.',
+      'Prova objetiva aplicada de forma presencial. A correção e o resultado são processados pela comissão avaliadora responsável.',
     color: 'from-violet-600 to-violet-500',
     bgLight: 'bg-violet-50',
     textColor: 'text-violet-600',
