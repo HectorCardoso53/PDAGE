@@ -50,9 +50,9 @@ export default function Hero() {
           className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-6"
           style={{ color: '#ffffff' }}
         >
-          Plataforma Digital de{' '}
+          Plataforma Digital para{' '}
           <span style={{ color: '#38b6ff' }}>Avaliação</span>{' '}
-          para Gestores Escolares
+          de Mérito e Desempenho
         </motion.h1>
 
         {/* Subtitle */}
@@ -64,7 +64,7 @@ export default function Hero() {
           className="text-lg leading-relaxed max-w-2xl mb-10"
           style={{ color: '#e0e0e0' }}
         >
-          Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores
+          Sistema oficial que vai gerenciar o processo de certificação e avaliação de gestores
           da educação municipal de{' '}
           <span className="font-semibold" style={{ color: '#ffffff' }}>Oriximiná/PA</span>.
           Transparente, seguro e 100% online.
