@@ -603,7 +603,13 @@ export default function InscricaoPage() {
         </div>
 
         {/* Form */}
-        <form ref={formRef} onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4" noValidate>
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (step < 4) handleNext(); } }}
+          className="max-w-3xl mx-auto px-4"
+          noValidate
+        >
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
 
             {/* ── Step 1 — Dados Pessoais ── */}
