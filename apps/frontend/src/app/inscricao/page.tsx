@@ -1032,9 +1032,9 @@ export default function InscricaoPage() {
                       { label: 'Título de Eleitor', file: form.docTituloEleitor },
                       { label: 'Quitação Eleitoral', file: form.docQuitacao },
                       ...(form.sexo === 'Masculino' ? [{ label: 'Carteira de Reservista', file: form.docReservista }] : []),
-                      ...(form.diplomaTipo === 'pedagogia' ? [{ label: 'Diploma — Licenciatura em Pedagogia', file: form.docDiplomaPedagogia }] : []),
-                      ...(form.diplomaTipo === 'outras' ? [{ label: 'Diploma — Licenciatura em outras áreas', file: form.docDiplomaOutras }] : []),
-                      ...(form.especializacao !== 'Não' ? [{ label: 'Certificado de Pós-graduação', file: form.docPosGraduacao }] : []),
+                      ...(form.diplomaTipo === 'pedagogia' ? [{ label: 'Diploma de Licenciatura Plena em Pedagogia', file: form.docDiplomaPedagogia }] : []),
+                      ...(form.diplomaTipo === 'outras' ? [{ label: 'Diploma de Licenciatura Plena em outras áreas', file: form.docDiplomaOutras }] : []),
+                      ...(form.especializacao !== 'Não' ? [{ label: 'Certificado de Pós-graduação em Administração ou Gestão Escolar', file: form.docPosGraduacao }] : []),
                       { label: 'Comprovante de Lotação Escolar', file: form.docLotacao },
                     ].map(({ label, file }) => {
                       const nameWithoutExt = file ? file.name.replace(/\.pdf$/i, '') : '';
