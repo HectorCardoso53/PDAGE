@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
-    url: 'https://meritus.oriximina.pa.gov.br',
+    url: 'http://localhost',
     siteName: 'Meritus',
     title: 'Meritus — Plataforma Digital para Avaliação de Mérito e Desempenho',
     description:
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     description:
       'Sistema oficial para gerenciamento do processo de certificação e avaliação de gestores da educação municipal de Oriximiná/PA.',
   },
-  metadataBase: new URL('https://meritus.oriximina.pa.gov.br'),
+  metadataBase: new URL('http://localhost'),
 };
 
 export const viewport: Viewport = {

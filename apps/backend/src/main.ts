@@ -13,7 +13,7 @@ async function bootstrap() {
 
   const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['http://localhost:3000', 'https://meritus.oriximina.pa.gov.br'];
+    : ['*'];
 
   app.enableCors({
     origin: (origin, callback) => {
