@@ -1078,10 +1078,8 @@ export default function InscricaoPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#fef3c7', border: '1.5px solid #f59e0b' }}>
-                  <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  </svg>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f0f7ff', border: '1.5px solid #38b6ff' }}>
+                  <img src="/logo.png" alt="Prefeitura" className="w-8 h-8 object-contain" />
                 </div>
                 <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Verifique antes de enviar</h3>
               </div>
@@ -1093,7 +1091,7 @@ export default function InscricaoPage() {
                 <li>• CPF: <strong>{form.cpf}</strong></li>
                 <li>• Escola: <strong>{form.escola}</strong></li>
                 <li>• Cargo: <strong>{form.cargo}</strong></li>
-                <li>• Matrícula: <strong>{form.matricula}</strong></li>
+                {form.vinculo !== 'Temporário' && <li>• Matrícula: <strong>{form.matricula}</strong></li>}
               </ul>
               <p className="text-xs text-gray-400">
                 Após o envio <strong>não será possível alterar</strong> os dados ou substituir documentos. Certifique-se de que está tudo correto.
