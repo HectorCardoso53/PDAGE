@@ -498,7 +498,7 @@ export default function InscricaoPage() {
                 <div className="flex items-center gap-1">
                   <input
                     key={file.name}
-                    ref={el => renameInputRef.current.set(field as string, el)}
+                    ref={el => { renameInputRef.current.set(field as string, el); }}
                     type="text"
                     defaultValue={file.name.replace(/\.pdf$/i, '')}
                     className="text-xs border border-orange-300 rounded-lg px-2 py-1.5 flex-1 focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white"
