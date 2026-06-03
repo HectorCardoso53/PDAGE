@@ -91,12 +91,13 @@ export default function Header() {
                   Área do Candidato
                 </a>
               ) : !isInscricaoPage ? (
-                <span
-                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold cursor-not-allowed opacity-50"
-                  style={{ background: '#9ca3af', color: '#374151' }}
+                <a
+                  href="/inscricao"
+                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                  style={{ background: '#ffd21f', color: '#001b3d' }}
                 >
-                  Em breve
-                </span>
+                  Inscreva-se
+                </a>
               ) : null}
 
               <button
@@ -153,22 +154,13 @@ export default function Header() {
                   className="mt-2 pt-2"
                   style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
                 >
-                  {hasAccount ? (
-                    <a
-                      href="/login"
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-bold"
-                      style={{ background: '#ffd21f', color: '#001b3d' }}
-                    >
-                      Área do Candidato
-                    </a>
-                  ) : (
-                    <span
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-bold cursor-not-allowed opacity-50"
-                      style={{ background: '#9ca3af', color: '#374151' }}
-                    >
-                      Em breve
-                    </span>
-                  )}
+                  <a
+                    href={hasAccount ? '/login' : '/inscricao'}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-bold"
+                    style={{ background: '#ffd21f', color: '#001b3d' }}
+                  >
+                    {hasAccount ? 'Área do Candidato' : 'Inscreva-se'}
+                  </a>
                 </motion.div>
               )}
             </nav>
