@@ -5,13 +5,14 @@ RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY turbo.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY packages/types/package.json ./packages/types/
 COPY packages/configs/package.json ./packages/configs/
+COPY packages/ui/package.json ./packages/ui/
 
-RUN npm install --workspace=apps/backend --workspace=packages/types --workspace=packages/configs
+RUN npm install --include=dev
 
 # ─── Stage 2: builder ────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
