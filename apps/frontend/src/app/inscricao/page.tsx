@@ -213,6 +213,7 @@ export default function InscricaoPage() {
   const [showResume, setShowResume] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<{ form: FormDraft; step: number } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const renameInputRef = useRef<Map<string, HTMLInputElement | null>>(new Map());
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
 
@@ -250,6 +251,13 @@ export default function InscricaoPage() {
   const handleFile = (field: keyof FormState, e: React.ChangeEvent<HTMLInputElement>) => {
     set(field, (e.target.files?.[0] ?? null) as FormState[typeof field]);
     setFileError('');
+  };
+
+  const handleRename = (field: keyof FormState, newName: string) => {
+    const file = form[field] as File | null;
+    if (!file || !newName.trim()) return;
+    const name = newName.trim().toLowerCase().endsWith('.pdf') ? newName.trim() : newName.trim() + '.pdf';
+    set(field, new File([file], name, { type: file.type }) as FormState[typeof field]);
   };
 
   const validateDocs = (): string => {
@@ -485,9 +493,32 @@ export default function InscricaoPage() {
               </p>
             )}
             {file && isPdf && !nameOk && (
-              <p className="text-xs text-orange-600 mt-1.5 font-medium">
-                ⚠ Renomeie o arquivo para <strong>{label}.pdf</strong> antes de continuar.
-              </p>
+              <div className="mt-1.5">
+                <p className="text-xs text-orange-600 font-medium mb-1">⚠ Nome incorreto — edite abaixo e clique em OK:</p>
+                <div className="flex items-center gap-1">
+                  <input
+                    key={file.name}
+                    ref={el => renameInputRef.current.set(field as string, el)}
+                    type="text"
+                    defaultValue={file.name.replace(/\.pdf$/i, '')}
+                    className="text-xs border border-orange-300 rounded-lg px-2 py-1.5 flex-1 focus:outline-none focus:ring-1 focus:ring-orange-400 bg-white"
+                    placeholder={label}
+                  />
+                  <span className="text-xs text-gray-400 font-medium">.pdf</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = renameInputRef.current.get(field as string);
+                      if (el) handleRename(field, el.value);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold text-white flex-shrink-0"
+                    style={{ background: '#001b3d' }}
+                  >
+                    OK
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Sugestão: <span className="font-semibold text-gray-600">{label}.pdf</span></p>
+              </div>
             )}
           </div>
         </div>
