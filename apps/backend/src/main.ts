@@ -11,13 +11,12 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['*'];
+  const corsOrigin = process.env.CORS_ORIGIN ?? '*';
 
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+    origin: corsOrigin === '*' ? true : (origin, callback) => {
+      const allowed = corsOrigin.split(',').map(o => o.trim());
+      if (!origin || allowed.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed by CORS`));
