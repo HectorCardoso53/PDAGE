@@ -265,8 +265,7 @@ export default function InscricaoPage() {
       return 'Envie o Diploma de Licenciatura Plena em Pedagogia (item f).';
     if (form.diplomaTipo === 'outras' && !form.docDiplomaOutras)
       return 'Envie o Diploma de Licenciatura Plena em outras áreas (item g).';
-    // Item h: pós-graduação obrigatória apenas para licenciados em outras áreas (edital)
-    if (form.diplomaTipo === 'outras' && !form.docPosGraduacao)
+    if (form.diplomaTipo === 'outras' && form.especializacao !== 'Não' && !form.docPosGraduacao)
       return 'Envie o Certificado de Pós-graduação em Administração ou Gestão Escolar (item h — obrigatório para licenciados em outras áreas).';
     if (!form.docLotacao) return 'Envie o Comprovante de Lotação Escolar (item i).';
     return '';
@@ -819,7 +818,6 @@ export default function InscricaoPage() {
                       <option value="">Selecione</option>
                       <option>Sim</option>
                       <option>Não</option>
-                      <option>Em curso</option>
                     </select>
                   </div>
                 </div>
@@ -887,14 +885,15 @@ export default function InscricaoPage() {
                   {form.diplomaTipo === 'pedagogia' && (
                     <div className="ml-7 space-y-3">
                       <FileCard field="docDiplomaPedagogia" tag="f" label="Diploma de Licenciatura Plena em Pedagogia" />
-                      {/* Pós-graduação é opcional para Pedagogia (não exigida pelo edital, item h é só para outras áreas) */}
-                      <FileCard
-                        field="docPosGraduacao"
-                        tag="h"
-                        label="Certificado de Pós-graduação em Administração ou Gestão Escolar"
-                        hint="Carga horária mínima de 360 horas"
-                        optional
-                      />
+                      {form.especializacao !== 'Não' && (
+                        <FileCard
+                          field="docPosGraduacao"
+                          tag="h"
+                          label="Certificado de Pós-graduação em Administração ou Gestão Escolar"
+                          hint="Carga horária mínima de 360 horas"
+                          optional
+                        />
+                      )}
                     </div>
                   )}
 
@@ -920,13 +919,14 @@ export default function InscricaoPage() {
                   {form.diplomaTipo === 'outras' && (
                     <div className="ml-7 space-y-3">
                       <FileCard field="docDiplomaOutras" tag="g" label="Diploma de Licenciatura Plena em outras áreas" />
-                      {/* Item h: obrigatório para licenciados em outras áreas (edital) */}
-                      <FileCard
-                        field="docPosGraduacao"
-                        tag="h"
-                        label="Certificado de Pós-graduação em Administração ou Gestão Escolar"
-                        hint="Carga horária mínima de 360 horas — obrigatório para licenciados em outras áreas"
-                      />
+                      {form.especializacao !== 'Não' && (
+                        <FileCard
+                          field="docPosGraduacao"
+                          tag="h"
+                          label="Certificado de Pós-graduação em Administração ou Gestão Escolar"
+                          hint="Carga horária mínima de 360 horas — obrigatório para licenciados em outras áreas"
+                        />
+                      )}
                     </div>
                   )}
                 </div>
