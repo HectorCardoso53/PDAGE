@@ -1,33 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 
 const quickLinks = [
-  { label: 'Início', href: '#inicio' },
-  { label: 'Sobre', href: '#sobre' },
-  { label: 'Processo', href: '#processo' },
-  { label: 'Funcionalidades', href: '#funcionalidades' },
-];
-
-const infoLinks = [
-  { label: 'Edital', href: '#' },
-  { label: 'Documentos Necessários', href: '#' },
-  { label: 'Suporte Técnico', href: '#' },
-  { label: 'Perguntas Frequentes', href: '#' },
+  { label: 'Início', href: '/#inicio' },
+  { label: 'Sobre', href: '/#sobre' },
+  { label: 'Processo', href: '/#processo' },
+  { label: 'Funcionalidades', href: '/#funcionalidades' },
 ];
 
 export default function Footer() {
-  const handleNavClick = (href: string) => {
-    const id = href.replace('#', '');
-    const el = document.getElementById(id);
-    if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top, behavior: 'smooth' });
-    }
-  };
-
   return (
     <footer style={{ background: '#001428', borderTop: '3px solid #ffd21f' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,10 +20,10 @@ export default function Footer() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 py-14"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-10 py-14"
         >
           {/* Column 1: Logo + description */}
-          <div className="lg:col-span-1 flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
                 <Image src="/logo.png" alt="Brasão de Oriximiná" width={40} height={40} className="w-full h-full object-contain" />
@@ -54,8 +37,7 @@ export default function Footer() {
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
               Plataforma Digital de Avaliação para Gestores Escolares de Oriximiná-PA.
-              Desenvolvida pela Secretaria de Eficiência Governamental - SEMEG, em 
-              parceria com Secretaria de Educação - SEMED.
+              Desenvolvida pela SEMEG em parceria com a SEMED.
             </p>
           </div>
 
@@ -67,38 +49,18 @@ export default function Footer() {
             <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.label}>
-                  <button
-                    onClick={() => handleNavClick(link.href)}
-                    className="text-sm text-gray-400 hover:text-white transition-colors duration-200 text-left"
-                  >
-                    {link.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Column 3: Info links */}
-          <div>
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              Informações
-            </h4>
-            <ul className="space-y-3">
-              {infoLinks.map((link) => (
-                <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors duration-200 inline-flex items-center gap-1.5 group"
+                    className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
                   >
                     {link.label}
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity duration-200" />
                   </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Column 4: Contact */}
+          {/* Column 3: Contact */}
           <div>
             <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
               Contato
@@ -127,9 +89,7 @@ export default function Footer() {
 
               <div>
                 <p className="text-xs text-gray-500 mb-1 uppercase tracking-wider">Município</p>
-                <p className="text-sm text-gray-400 leading-relaxed">
-                  Oriximiná — Pará
-                </p>
+                <p className="text-sm text-gray-400">Oriximiná — Pará</p>
               </div>
             </div>
           </div>
@@ -141,8 +101,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} Prefeitura Municipal de Oriximiná — SEMED. Desenvolvido pela SEMEG. Todos os
-            direitos reservados.
+            © {new Date().getFullYear()} Prefeitura Municipal de Oriximiná — SEMED. Desenvolvido pela SEMEG. Todos os direitos reservados.
           </p>
           <p className="text-xs text-gray-600">
             Este sistema trata dados pessoais em conformidade com a{' '}

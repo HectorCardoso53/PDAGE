@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, FileCheck, Zap, Users } from 'lucide-react';
+import { Shield, FileCheck, Zap, Users, FileText } from 'lucide-react';
 
 const cards = [
   {
@@ -81,6 +81,26 @@ export default function About() {
           </p>
         </motion.div>
 
+        {/* Edital CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="text-center mb-10"
+        >
+          <a
+            href="https://oriximina.1dom.com.br/edicao/01KT6S1ASXH6V93ZBZ83RZ77EK"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-opacity hover:opacity-90 shadow-md"
+            style={{ background: '#001b3d', color: '#ffd21f' }}
+          >
+            <FileText className="w-4 h-4" />
+            Ver o Edital completo
+          </a>
+        </motion.div>
+
         {/* Cards grid */}
         <motion.div
           variants={containerVariants}
@@ -118,6 +138,7 @@ export default function About() {
             );
           })}
         </motion.div>
+
 
       </div>
     </section>

@@ -94,7 +94,6 @@ export default function Header() {
                 <span
                   className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold cursor-not-allowed opacity-50"
                   style={{ background: '#9ca3af', color: '#374151' }}
-                  title="Inscrições encerradas"
                 >
                   Em breve
                 </span>

@@ -343,7 +343,17 @@ export default function InscricaoPage() {
         {/* Page header */}
         <div className="py-10 text-center" style={{ background: '#001b3d' }}>
           <h1 className="text-3xl font-bold text-white mb-1">Inscrição — Processo Seletivo</h1>
-          <p className="text-sm" style={{ color: '#38b6ff' }}>Meritus · Gestores Escolares · Oriximiná/PA</p>
+          <p className="text-sm mb-4" style={{ color: '#38b6ff' }}>Meritus · Gestores Escolares · Oriximiná/PA</p>
+          <a
+            href="https://oriximina.1dom.com.br/edicao/01KT6S1ASXH6V93ZBZ83RZ77EK"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ background: '#ffd21f', color: '#001b3d' }}
+          >
+            <FileText className="w-4 h-4" />
+            Ler o Edital antes de se inscrever
+          </a>
         </div>
 
         {/* Stepper */}
