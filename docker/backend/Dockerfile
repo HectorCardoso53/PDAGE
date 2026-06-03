@@ -53,6 +53,9 @@ RUN npm install --omit=dev
 # Copia o client Prisma gerado (específico para linux-musl-openssl-3.0.x)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+# Cria pasta de uploads com permissão para o usuário nestjs
+RUN mkdir -p /app/uploads && chown -R nestjs:nodejs /app/uploads
+
 USER nestjs
 
 EXPOSE 3001
