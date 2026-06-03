@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,20 +21,13 @@ export class AuthService {
       where: { cpf },
     });
 
-    if (!candidato) {
+    if (!candidato || !candidato.senha) {
       throw new UnauthorizedException('CPF não encontrado. Verifique se você realizou a inscrição.');
     }
 
-    const nascInput = new Date(dto.dataNasc);
-    const nascStored = new Date(candidato.dataNasc);
-
-    const match =
-      nascInput.getUTCFullYear() === nascStored.getUTCFullYear() &&
-      nascInput.getUTCMonth() === nascStored.getUTCMonth() &&
-      nascInput.getUTCDate() === nascStored.getUTCDate();
-
-    if (!match) {
-      throw new UnauthorizedException('Data de nascimento incorreta.');
+    const senhaOk = await bcrypt.compare(dto.senha, candidato.senha);
+    if (!senhaOk) {
+      throw new UnauthorizedException('Senha incorreta.');
     }
 
     const payload = { sub: candidato.id, cpf: candidato.cpf, nome: candidato.nome, role: 'candidato' };

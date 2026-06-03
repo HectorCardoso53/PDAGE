@@ -6,5 +6,5 @@ export class LoginDto {
   cpf: string;
 
   @IsString()
-  dataNasc: string;
+  senha: string;
 }

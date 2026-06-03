@@ -5,7 +5,7 @@ import { EtapaTipo } from '@prisma/client';
 const ETAPA_LABELS: Record<EtapaTipo, string> = {
   INSCRICAO: 'Cadastro e Inscrição',
   HABILITACAO_DOCUMENTAL: 'Habilitação Documental',
-  AVALIACAO_COGNITIVA: 'Avaliação Cognitiva',
+  AVALIACAO_COGNITIVA: 'Avaliação Objetiva',
   QUALIFICACAO_CURRICULAR: 'Qualificação Curricular',
   PLANO_GESTAO: 'Plano de Gestão',
   RESULTADO_FINAL: 'Resultado Final',
@@ -40,6 +40,20 @@ export class CandidatoService {
     });
   }
 
+  async updateMe(candidatoId: string, body: Record<string, string>) {
+    const allowed = [
+      'nome','rg','orgaoEmissor','telefone','email',
+      'cep','logradouro','numero','bairro','cidade',
+      'vinculo','cargo','escola','matricula','municipio',
+      'tempoServico','formacao','especializacao',
+    ];
+    const data: Record<string, string> = {};
+    for (const key of allowed) {
+      if (body[key] !== undefined) data[key] = body[key];
+    }
+    return this.prisma.candidato.update({ where: { id: candidatoId }, data });
+  }
+
   async getMe(candidatoId: string) {
     const candidato = await this.prisma.candidato.findUnique({
       where: { id: candidatoId },
@@ -60,7 +74,7 @@ export class CandidatoService {
       const etapaDb = inscricao?.etapas.find(e => e.etapa === tipo);
       return {
         id: etapaDb?.id ?? null,
-        ordem: index + 2,
+        ordem: index + 1,
         tipo,
         label: ETAPA_LABELS[tipo],
         status: etapaDb?.status ?? 'PENDENTE',
@@ -77,13 +91,25 @@ export class CandidatoService {
         nome: candidato.nome,
         cpf: candidato.cpf,
         rg: candidato.rg,
+        orgaoEmissor: candidato.orgaoEmissor,
         dataNasc: candidato.dataNasc,
+        sexo: candidato.sexo,
+        estadoCivil: candidato.estadoCivil,
         email: candidato.email,
         telefone: candidato.telefone,
+        cep: candidato.cep,
+        logradouro: candidato.logradouro,
+        numero: candidato.numero,
+        bairro: candidato.bairro,
+        cidade: candidato.cidade,
+        vinculo: candidato.vinculo,
         cargo: candidato.cargo,
         escola: candidato.escola,
         matricula: candidato.matricula,
         municipio: candidato.municipio,
+        tempoServico: candidato.tempoServico,
+        formacao: candidato.formacao,
+        especializacao: candidato.especializacao,
         docRgCnh:         candidato.docRgCnh,
         docCpf:           candidato.docCpf,
         docResidencia:    candidato.docResidencia,

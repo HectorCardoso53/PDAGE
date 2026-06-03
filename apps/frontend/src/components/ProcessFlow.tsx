@@ -37,7 +37,7 @@ const steps = [
   {
     number: '03',
     icon: Brain,
-    title: 'Avaliação Cognitiva',
+    title: 'Avaliação Objetiva',
     description:
       'Prova objetiva aplicada de forma presencial. A correção e o resultado são processados pela comissão avaliadora responsável.',
     color: 'from-violet-600 to-violet-500',

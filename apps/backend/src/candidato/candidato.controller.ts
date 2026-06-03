@@ -13,6 +13,15 @@ export class CandidatoController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateMe(
+    @Request() req: { user: { id: string } },
+    @Body() body: Record<string, string>,
+  ) {
+    return this.candidatoService.updateMe(req.user.id, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('etapa/:id/recurso')
   submeterRecurso(
     @Param('id') id: string,

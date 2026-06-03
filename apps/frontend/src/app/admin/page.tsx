@@ -50,9 +50,10 @@ type AdminCandidato = {
   numero: string | null;
   bairro: string | null;
   cidade: string | null;
+  vinculo: string | null;
   cargo: string;
   escola: string;
-  matricula: string;
+  matricula: string | null;
   municipio: string;
   tempoServico: string | null;
   formacao: string | null;
@@ -134,9 +135,10 @@ function getStageData(etapa: string, c: AdminCandidato, allEtapas: EtapaAdmin[])
         { label: 'CPF',           value: fmtCpf(c.cpf) },
         { label: 'E-mail',        value: c.email },
         { label: 'Telefone',      value: fmtTel(c.telefone) },
+        { label: 'Vínculo',       value: c.vinculo || '—' },
         { label: 'Cargo',         value: c.cargo },
         { label: 'Escola',        value: c.escola },
-        { label: 'Matrícula',     value: c.matricula },
+        { label: 'Matrícula',     value: c.matricula || '—' },
         { label: 'Município',     value: c.municipio },
         { label: 'Inscrição em',  value: c.inscricao ? fmtDate(c.inscricao.createdAt) : '—' },
       ];
@@ -153,9 +155,10 @@ function getStageData(etapa: string, c: AdminCandidato, allEtapas: EtapaAdmin[])
         { label: 'E-mail',         value: c.email },
         { label: 'Endereço',       value: endereco },
         { label: 'CEP',            value: c.cep || '—' },
+        { label: 'Vínculo',        value: c.vinculo || '—' },
         { label: 'Cargo',          value: c.cargo },
         { label: 'Escola',         value: c.escola },
-        { label: 'Matrícula',      value: c.matricula },
+        { label: 'Matrícula',      value: c.matricula || '—' },
         { label: 'Município',      value: c.municipio },
         { label: 'Formação',       value: c.formacao || '—' },
         { label: 'Especialização', value: c.especializacao || '—' },
@@ -173,9 +176,10 @@ function getStageData(etapa: string, c: AdminCandidato, allEtapas: EtapaAdmin[])
     case 'AVALIACAO_COGNITIVA':
       return [
         { label: 'Candidato',  value: c.nome },
+        { label: 'Vínculo',    value: c.vinculo || '—' },
         { label: 'Cargo',      value: c.cargo },
         { label: 'Escola',     value: c.escola },
-        { label: 'Matrícula',  value: c.matricula },
+        { label: 'Matrícula',  value: c.matricula || '—' },
       ];
     case 'PLANO_GESTAO':
       return [
@@ -675,9 +679,10 @@ export default function AdminPage() {
                   { label: 'Estado civil',   value: reviewing.estadoCivil || '—' },
                   { label: 'E-mail',         value: reviewing.email },
                   { label: 'Telefone',       value: reviewing.telefone },
+                  { label: 'Vínculo',        value: reviewing.vinculo || '—' },
                   { label: 'Cargo',          value: reviewing.cargo },
                   { label: 'Escola',         value: reviewing.escola },
-                  { label: 'Matrícula',      value: reviewing.matricula },
+                  { label: 'Matrícula',      value: reviewing.matricula || '—' },
                   { label: 'Formação',       value: reviewing.formacao || '—' },
                   { label: 'Especialização', value: reviewing.especializacao || '—' },
                   { label: 'Tempo de serv.', value: reviewing.tempoServico || '—' },
@@ -711,7 +716,7 @@ export default function AdminPage() {
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setReviewAction('approve')}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
-                    Aprovar Inscrição
+                    Habilitar
                   </button>
                   <button onClick={() => {
                     const rejected = DOC_FIELDS
@@ -722,7 +727,7 @@ export default function AdminPage() {
                     setReviewAction('reject');
                   }}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors">
-                    Reprovar
+                    Inabilitar
                   </button>
                 </div>
               )}
@@ -730,7 +735,7 @@ export default function AdminPage() {
               {reviewAction === 'approve' && (
                 <div className="space-y-3 pt-2">
                   <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                    Confirmar aprovação da inscrição de <strong>{reviewing.nome}</strong>?
+                    Confirmar habilitação da inscrição de <strong>{reviewing.nome}</strong>?
                   </p>
                   <div className="flex gap-2">
                     <button onClick={() => setReviewAction(null)}
@@ -739,7 +744,7 @@ export default function AdminPage() {
                     </button>
                     <button onClick={() => handleReview(reviewing, 'approve')} disabled={reviewSaving}
                       className="flex-1 py-2 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-colors">
-                      {reviewSaving ? 'Salvando…' : 'Confirmar Aprovação'}
+                      {reviewSaving ? 'Salvando…' : 'Confirmar Habilitação'}
                     </button>
                   </div>
                 </div>
@@ -754,7 +759,7 @@ export default function AdminPage() {
                     </label>
                     <textarea rows={3} value={rejectReason}
                       onChange={e => setRejectReason(e.target.value)}
-                      placeholder="Descreva o motivo da reprovação..."
+                      placeholder="Descreva o motivo da inabilitação..."
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300" />
                   </div>
                   <div className="flex gap-2">
@@ -765,7 +770,7 @@ export default function AdminPage() {
                     <button onClick={() => handleReview(reviewing, 'reject', rejectReason)}
                       disabled={reviewSaving || !rejectReason.trim()}
                       className="flex-1 py-2 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors">
-                      {reviewSaving ? 'Salvando…' : 'Confirmar Reprovação'}
+                      {reviewSaving ? 'Salvando…' : 'Confirmar Inabilitação'}
                     </button>
                   </div>
                 </div>

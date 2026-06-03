@@ -2,6 +2,7 @@ import { IsString, IsEmail, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CriarInscricaoDto {
   @IsString() @IsNotEmpty() nome: string;
+  @IsString() @IsNotEmpty() senha: string;
   @IsString() @IsNotEmpty() cpf: string;
   @IsString() @IsNotEmpty() dataNasc: string;
   @IsString() @IsNotEmpty() sexo: string;
@@ -9,7 +10,8 @@ export class CriarInscricaoDto {
   @IsString() @IsNotEmpty() telefone: string;
   @IsString() @IsNotEmpty() cargo: string;
   @IsString() @IsNotEmpty() escola: string;
-  @IsString() @IsNotEmpty() matricula: string;
+  @IsOptional() @IsString() vinculo?: string;
+  @IsOptional() @IsString() matricula?: string;
 
   @IsOptional() @IsString() rg?: string;
   @IsOptional() @IsString() orgaoEmissor?: string;

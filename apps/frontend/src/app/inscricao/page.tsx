@@ -5,7 +5,7 @@
 import { useRef, useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { ChevronRight, ChevronLeft, CheckCircle, Upload, User, Briefcase, FileText } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, Upload, User, Briefcase, FileText, Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
 const ESCOLAS: { nome: string; endereco: string }[] = [
@@ -138,6 +138,7 @@ type DiplomaType = '' | 'pedagogia' | 'outras';
 type FormState = {
   nome: string; cpf: string; rg: string; orgaoEmissor: string; dataNasc: string;
   sexo: string; estadoCivil: string; telefone: string; email: string;
+  senha: string; confirmarSenha: string;
   cep: string; logradouro: string; numero: string; bairro: string; cidade: string;
   vinculo: string; matricula: string; cargo: string; escola: string; municipio: string;
   tempoServico: string; formacao: string; especializacao: string;
@@ -159,7 +160,8 @@ const DRAFT_KEY = 'pdage_inscricao_draft';
 
 type FormDraft = Omit<FormState,
   'docRgCnh'|'docCpf'|'docResidencia'|'docTituloEleitor'|'docQuitacao'|
-  'docReservista'|'docDiplomaPedagogia'|'docDiplomaOutras'|'docPosGraduacao'|'docLotacao'
+  'docReservista'|'docDiplomaPedagogia'|'docDiplomaOutras'|'docPosGraduacao'|'docLotacao'|
+  'confirmarSenha'
 >;
 
 function loadDraft(): { form: FormDraft; step: number } | null {
@@ -176,6 +178,7 @@ function saveDraft(form: FormState, step: number) {
     dataNasc: form.dataNasc, sexo: form.sexo, estadoCivil: form.estadoCivil,
     telefone: form.telefone, email: form.email, cep: form.cep,
     logradouro: form.logradouro, numero: form.numero, bairro: form.bairro, cidade: form.cidade,
+    senha: form.senha,
     vinculo: form.vinculo, matricula: form.matricula, cargo: form.cargo,
     escola: form.escola, municipio: form.municipio, tempoServico: form.tempoServico,
     formacao: form.formacao, especializacao: form.especializacao,
@@ -186,7 +189,7 @@ function saveDraft(form: FormState, step: number) {
 
 const INITIAL_FORM: FormState = {
   nome: '', cpf: '', rg: '', orgaoEmissor: '', dataNasc: '', sexo: '', estadoCivil: '',
-  telefone: '', email: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '',
+  telefone: '', email: '', senha: '', confirmarSenha: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '',
   vinculo: '', matricula: '', cargo: '', escola: '', municipio: 'Oriximiná',
   tempoServico: '', formacao: '', especializacao: '',
   docRgCnh: null, docCpf: null, docResidencia: null,
@@ -204,6 +207,9 @@ export default function InscricaoPage() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [senhaError, setSenhaError] = useState('');
+  const [showSenha, setShowSenha] = useState(false);
+  const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
   const [showResume, setShowResume] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<{ form: FormDraft; step: number } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -267,7 +273,12 @@ export default function InscricaoPage() {
   };
 
   const handleNext = () => {
-    if (step === 3) {
+    if (step === 1) {
+      if (formRef.current && !formRef.current.reportValidity()) return;
+      if (form.senha.length < 6) { setSenhaError('A senha deve ter pelo menos 6 caracteres.'); return; }
+      if (form.senha !== form.confirmarSenha) { setSenhaError('As senhas não coincidem.'); return; }
+      setSenhaError('');
+    } else if (step === 3) {
       const err = validateDocs();
       if (err) { setFileError(err); return; }
       setFileError('');
@@ -287,6 +298,7 @@ export default function InscricaoPage() {
 
       // Campos de texto
       fd.append('nome',          form.nome);
+      fd.append('senha',         form.senha);
       fd.append('cpf',           form.cpf);
       fd.append('dataNasc',      form.dataNasc);
       fd.append('sexo',          form.sexo);
@@ -300,7 +312,8 @@ export default function InscricaoPage() {
       fd.append('numero',        form.numero);
       fd.append('bairro',        form.bairro);
       fd.append('cidade',        form.cidade);
-      fd.append('matricula',     form.matricula);
+      if (form.vinculo)   fd.append('vinculo',   form.vinculo);
+      if (form.matricula) fd.append('matricula', form.matricula);
       fd.append('cargo',         form.cargo);
       fd.append('escola',        form.escola);
       fd.append('municipio',     form.municipio);
@@ -370,41 +383,6 @@ export default function InscricaoPage() {
                 </div>
               )}
               <p className="text-xs text-gray-400 mt-2">Guarde este número. A análise da sua inscrição será realizada pela comissão através do painel administrativo.</p>
-            </div>
-
-            {/* Resumo dos dados pessoais */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4 text-sm text-gray-700">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Dados Pessoais</p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                <span className="text-gray-400">Nome</span><span className="font-medium">{form.nome}</span>
-                <span className="text-gray-400">CPF</span><span className="font-medium">{form.cpf}</span>
-                <span className="text-gray-400">Data de Nascimento</span><span className="font-medium">{form.dataNasc}</span>
-                <span className="text-gray-400">RG / CNH</span><span className="font-medium">{form.rg} — {form.orgaoEmissor}</span>
-                <span className="text-gray-400">Sexo</span><span className="font-medium">{form.sexo}</span>
-                <span className="text-gray-400">Estado Civil</span><span className="font-medium">{form.estadoCivil}</span>
-                <span className="text-gray-400">Telefone</span><span className="font-medium">{form.telefone}</span>
-                <span className="text-gray-400">E-mail</span><span className="font-medium">{form.email}</span>
-                <span className="text-gray-400">Endereço</span><span className="font-medium">{form.logradouro}, {form.numero} — {form.bairro}, {form.cidade}</span>
-              </div>
-            </div>
-
-            {/* Resumo dos dados funcionais */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4 text-sm text-gray-700">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Dados Funcionais</p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                <span className="text-gray-400">Vínculo</span><span className="font-medium">{form.vinculo}</span>
-                {form.vinculo !== 'Temporário' && <><span className="text-gray-400">Matrícula</span><span className="font-medium">{form.matricula}</span></>}
-                <span className="text-gray-400">Cargo</span><span className="font-medium">{form.cargo}</span>
-                <span className="text-gray-400">Escola</span><span className="font-medium">{form.escola}</span>
-                <span className="text-gray-400">Município</span><span className="font-medium">{form.municipio}</span>
-                <span className="text-gray-400">Tempo de Serviço</span><span className="font-medium">{form.tempoServico}</span>
-                <span className="text-gray-400">Formação</span><span className="font-medium">{form.formacao}</span>
-                <span className="text-gray-400">Especialização</span><span className="font-medium">{form.especializacao}</span>
-                <span className="text-gray-400">Diploma</span>
-                <span className="font-medium">
-                  {form.diplomaTipo === 'pedagogia' ? 'Licenciatura em Pedagogia' : form.diplomaTipo === 'outras' ? 'Licenciatura em outras áreas' : '—'}
-                </span>
-              </div>
             </div>
 
             {/* Documentos */}
@@ -657,6 +635,51 @@ export default function InscricaoPage() {
                     <input required type="email" className={inputClass} value={form.email} onChange={e => set('email', e.target.value)} placeholder="seu@email.com" />
                   </div>
                 </div>
+                <div className={fieldsetClass}>
+                  <div>
+                    <label className={labelClass}>Senha de acesso *</label>
+                    <div className="relative">
+                      <input
+                        required
+                        type={showSenha ? 'text' : 'password'}
+                        className={inputClass + ' pr-10'}
+                        value={form.senha}
+                        onChange={e => { set('senha', e.target.value); setSenhaError(''); }}
+                        placeholder="Mínimo 6 caracteres"
+                        minLength={6}
+                      />
+                      <button type="button" tabIndex={-1}
+                        onClick={() => setShowSenha(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Confirmar senha *</label>
+                    <div className="relative">
+                      <input
+                        required
+                        type={showConfirmarSenha ? 'text' : 'password'}
+                        className={inputClass + ' pr-10'}
+                        value={form.confirmarSenha}
+                        onChange={e => { set('confirmarSenha', e.target.value); setSenhaError(''); }}
+                        placeholder="Repita a senha"
+                      />
+                      <button type="button" tabIndex={-1}
+                        onClick={() => setShowConfirmarSenha(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showConfirmarSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {senhaError && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                    {senhaError}
+                  </p>
+                )}
+
                 <div className="pt-2">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Endereço</p>
                   <div className={fieldsetClass}>
@@ -976,15 +999,42 @@ export default function InscricaoPage() {
                       ...(form.diplomaTipo === 'outras' ? [{ label: 'Diploma — Licenciatura em outras áreas', file: form.docDiplomaOutras }] : []),
                       ...(form.especializacao !== 'Não' ? [{ label: 'Certificado de Pós-graduação', file: form.docPosGraduacao }] : []),
                       { label: 'Comprovante de Lotação Escolar', file: form.docLotacao },
-                    ].map(({ label, file }) => (
-                      <li key={label} className="flex items-center gap-2">
-                        <span className={`w-4 h-4 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${file ? 'bg-green-500 text-white' : 'bg-red-400 text-white'}`}>
-                          {file ? '✓' : '✗'}
-                        </span>
-                        <span className={file ? 'text-gray-700' : 'text-red-500'}>{label}</span>
-                        {file && <span className="text-gray-400 truncate text-xs">— {file.name}</span>}
-                      </li>
-                    ))}
+                    ].map(({ label, file }) => {
+                      const nameWithoutExt = file ? file.name.replace(/\.pdf$/i, '') : '';
+                      const normLabel = normalizeStr(label);
+                      const normFile  = normalizeStr(nameWithoutExt);
+                      const nameOk = !file || normFile.length < 2 || normLabel.includes(normFile) || normFile.includes(normLabel);
+                      const isPdf = !file || file.name.toLowerCase().endsWith('.pdf');
+                      const hasWarning = file && (!isPdf || !nameOk);
+
+                      return (
+                        <li key={label} className={`rounded-lg px-3 py-2 ${hasWarning ? 'bg-orange-50 border border-orange-200' : 'flex items-center gap-2'}`}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`w-4 h-4 flex-shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${hasWarning ? 'bg-orange-400 text-white' : file ? 'bg-green-500 text-white' : 'bg-red-400 text-white'}`}>
+                              {hasWarning ? '!' : file ? '✓' : '✗'}
+                            </span>
+                            <span className={hasWarning ? 'text-orange-700 font-medium' : file ? 'text-gray-700' : 'text-red-500'}>{label}</span>
+                            {file && (
+                              <button
+                                type="button"
+                                onClick={() => window.open(URL.createObjectURL(file))}
+                                className={`inline-flex items-center gap-1 text-xs hover:underline truncate max-w-[220px] ${hasWarning ? 'text-orange-500 hover:text-orange-700' : 'text-blue-500 hover:text-blue-700'}`}
+                                title="Visualizar documento"
+                              >
+                                <Eye className="w-3.5 h-3.5 flex-shrink-0" />
+                                {file.name}
+                              </button>
+                            )}
+                          </div>
+                          {file && !isPdf && (
+                            <p className="text-xs text-orange-600 mt-1 ml-6">⚠ Apenas PDF é aceito — converta o arquivo.</p>
+                          )}
+                          {file && isPdf && !nameOk && (
+                            <p className="text-xs text-orange-600 mt-1 ml-6">⚠ Renomeie para <strong>{label}.pdf</strong> antes de enviar.</p>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
                 {submitError && (

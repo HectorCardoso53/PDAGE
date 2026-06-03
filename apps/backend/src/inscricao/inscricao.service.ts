@@ -1,4 +1,5 @@
 import { Injectable, ConflictException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { CriarInscricaoDto } from './dto/criar-inscricao.dto';
@@ -44,10 +45,12 @@ export class InscricaoService {
     }
 
     const protocolo = await this.gerarProtocolo();
+    const senhaHash = await bcrypt.hash(dto.senha, 10);
 
     const candidato = await this.prisma.candidato.create({
       data: {
         cpf,
+        senha: senhaHash,
         dataNasc:      new Date(dto.dataNasc),
         nome:          dto.nome,
         email:         dto.email,
@@ -61,6 +64,7 @@ export class InscricaoService {
         numero:        dto.numero,
         bairro:        dto.bairro,
         cidade:        dto.cidade,
+        vinculo:       dto.vinculo,
         cargo:         dto.cargo,
         escola:        dto.escola,
         matricula:     dto.matricula,

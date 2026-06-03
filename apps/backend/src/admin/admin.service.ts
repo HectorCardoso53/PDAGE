@@ -15,7 +15,7 @@ const ETAPA_ORDER = [
 const ETAPA_LABELS: Record<string, string> = {
   INSCRICAO: 'Cadastro e Inscrição',
   HABILITACAO_DOCUMENTAL: 'Habilitação Documental',
-  AVALIACAO_COGNITIVA: 'Avaliação Cognitiva',
+  AVALIACAO_COGNITIVA: 'Avaliação Objetiva',
   QUALIFICACAO_CURRICULAR: 'Qualificação Curricular',
   PLANO_GESTAO: 'Plano de Gestão',
   RESULTADO_FINAL: 'Resultado Final',

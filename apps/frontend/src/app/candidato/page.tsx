@@ -6,7 +6,7 @@ import Image from 'next/image';
 import {
   FileText, Brain, GraduationCap, ClipboardList,
   BarChart, Award, LogOut, User, CheckCircle,
-  Clock, XCircle, Lock, ChevronDown, ChevronUp,
+  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 import Footer from '@/components/Footer';
@@ -28,9 +28,14 @@ type Etapa = {
 type Inscricao = { id: string; protocolo: string; createdAt: string };
 
 type Candidato = {
-  id: string; nome: string; cpf: string; rg: string | null; dataNasc: string | null;
-  email: string; telefone: string; cargo: string; escola: string;
-  matricula: string; municipio: string;
+  id: string; nome: string; cpf: string; rg: string | null; orgaoEmissor: string | null;
+  dataNasc: string | null; sexo: string | null; estadoCivil: string | null;
+  email: string; telefone: string;
+  cep: string | null; logradouro: string | null; numero: string | null;
+  bairro: string | null; cidade: string | null;
+  vinculo: string | null; cargo: string; escola: string;
+  matricula: string | null; municipio: string;
+  tempoServico: string | null; formacao: string | null; especializacao: string | null;
   docRgCnh: string | null; docCpf: string | null; docResidencia: string | null;
   docTituloEleitor: string | null; docQuitacao: string | null; docReservista: string | null;
   docDiploma: string | null; docPosGraduacao: string | null; docLotacao: string | null;
@@ -69,10 +74,10 @@ export default function CandidatoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedEtapa, setExpandedEtapa] = useState<string | null>('INSCRICAO');
-  const [recursoTexto, setRecursoTexto] = useState('');
-  const [recursoAberto, setRecursoAberto] = useState<string | null>(null);
-  const [recursoSaving, setRecursoSaving] = useState(false);
-  const [recursoEnviado, setRecursoEnviado] = useState<string | null>(null);
+  const [editando, setEditando] = useState(false);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('meritus_token');
@@ -90,29 +95,39 @@ export default function CandidatoPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  const handleRecurso = async (etapaId: string) => {
-    if (!recursoTexto.trim()) return;
-    setRecursoSaving(true);
+
+  const openEdit = (c: Candidato) => {
+    setEditForm({
+      nome: c.nome, rg: c.rg ?? '', orgaoEmissor: c.orgaoEmissor ?? '',
+      telefone: c.telefone, email: c.email,
+      cep: c.cep ?? '', logradouro: c.logradouro ?? '', numero: c.numero ?? '',
+      bairro: c.bairro ?? '', cidade: c.cidade ?? '',
+      vinculo: c.vinculo ?? '', cargo: c.cargo, escola: c.escola,
+      matricula: c.matricula ?? '', municipio: c.municipio,
+      tempoServico: c.tempoServico ?? '', formacao: c.formacao ?? '',
+      especializacao: c.especializacao ?? '',
+    });
+    setEditError('');
+    setEditando(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setEditSaving(true);
+    setEditError('');
     const token = localStorage.getItem('meritus_token');
     try {
-      const res = await apiFetch(`/api/candidato/etapa/${etapaId}/recurso`, {
+      const res = await apiFetch('/api/candidato/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ recurso: recursoTexto.trim() }),
+        body: JSON.stringify(editForm),
       });
-      if (res.ok) {
-        setRecursoEnviado(etapaId);
-        setRecursoAberto(null);
-        setRecursoTexto('');
-        setData(prev => prev ? {
-          ...prev,
-          etapas: prev.etapas.map(e =>
-            e.id === etapaId ? { ...e, status: 'EM_ANALISE', recurso: recursoTexto.trim() } : e
-          ),
-        } : null);
-      }
+      if (!res.ok) { setEditError('Erro ao salvar. Tente novamente.'); return; }
+      setData(prev => prev ? { ...prev, candidato: { ...prev.candidato, ...editForm } } : null);
+      setEditando(false);
+    } catch {
+      setEditError('Erro de conexão.');
     } finally {
-      setRecursoSaving(false);
+      setEditSaving(false);
     }
   };
 
@@ -203,9 +218,15 @@ export default function CandidatoPage() {
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                 <span className="text-gray-400">Cargo: <span className="text-gray-700 font-medium">{candidato.cargo}</span></span>
                 <span className="text-gray-400">Escola: <span className="text-gray-700 font-medium">{candidato.escola}</span></span>
-                <span className="text-gray-400">Matrícula: <span className="text-gray-700 font-medium">{candidato.matricula}</span></span>
+                <span className="text-gray-400">Matrícula: <span className="text-gray-700 font-medium">{candidato.matricula || '—'}</span></span>
                 <span className="text-gray-400">Município: <span className="text-gray-700 font-medium">{candidato.municipio}</span></span>
               </div>
+              <button
+                onClick={() => openEdit(candidato)}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Editar dados da inscrição
+              </button>
             </div>
             {inscricao && (
               <div className="hidden sm:block text-right flex-shrink-0">
@@ -269,16 +290,14 @@ export default function CandidatoPage() {
             const isPendente = etapa.status === 'PENDENTE';
 
             const cfg = {
-              PENDENTE:   { label: 'Aguardando comissão', color: 'text-gray-400',  bg: 'bg-gray-50',   border: 'border-gray-100',  icon: Lock },
+              PENDENTE:   { label: 'Aguardando habilitação', color: 'text-gray-400',  bg: 'bg-gray-50',   border: 'border-gray-100',  icon: Lock },
               EM_ANALISE: { label: 'Em análise',          color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', icon: Clock },
-              APROVADO:   { label: 'Aprovada',            color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
-              REPROVADO:  { label: 'Reprovada',           color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
+              APROVADO:   { label: 'Habilitado',           color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
+              REPROVADO:  { label: 'Inabilitado',          color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
             }[etapa.status];
 
             const StatusIcon = cfg.icon;
             const isReprovado = etapa.status === 'REPROVADO';
-            const jaEnviouRecurso = !!etapa.recurso || recursoEnviado === etapa.id;
-            const abrindoRecurso = recursoAberto === etapa.tipo;
             const isExpanded = expandedEtapa === etapa.tipo;
 
             const etapaDocs = etapa.tipo === 'HABILITACAO_DOCUMENTAL'
@@ -430,114 +449,13 @@ export default function CandidatoPage() {
                   </div>
                 )}
 
-                {/* Seção de reprovação + recurso */}
-                {isReprovado && (
-                  <div className="border-t border-red-100 px-4 pb-4 pt-3 space-y-3">
-                    {etapa.observacao && (
-                      <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
-                        <p className="text-xs font-semibold text-red-600 mb-0.5">Justificativa da comissão:</p>
-                        <p className="text-sm text-red-700 leading-relaxed">{etapa.observacao}</p>
-                      </div>
-                    )}
-
-                    {jaEnviouRecurso ? (
-                      <div className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 space-y-1">
-                        <p className="text-xs font-semibold text-orange-700">Recurso enviado — aguardando reavaliação</p>
-                        <p className="text-sm text-orange-800 italic leading-relaxed">{etapa.recurso}</p>
-                      </div>
-                    ) : (
-                      <>
-                        {!abrindoRecurso ? (
-                          <button
-                            onClick={() => { setRecursoAberto(etapa.tipo); setRecursoTexto(''); }}
-                            className="w-full py-2 rounded-lg border border-orange-300 text-orange-700 text-xs font-semibold hover:bg-orange-50 transition-colors"
-                          >
-                            Entrar com Recurso
-                          </button>
-                        ) : (
-                          /* ── Formulário Anexo V ── */
-                          <div className="rounded-xl border border-orange-200 bg-orange-50 overflow-hidden text-sm">
-                            {/* Cabeçalho oficial */}
-                            <div className="bg-white border-b border-orange-200 px-4 py-3 text-center space-y-0.5">
-                              <Image src="/brasão.png" alt="Brasão de Oriximiná" width={56} height={56} className="mx-auto mb-2 object-contain" />
-                              <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Prefeitura Municipal de Oriximiná</p>
-                              <p className="text-xs text-gray-500 uppercase tracking-wide">Gabinete do Prefeito</p>
-                              <p className="text-xs font-semibold text-gray-700 mt-1">ANEXO V — FORMULÁRIO PARA RECURSO</p>
-                            </div>
-
-                            <div className="px-4 py-3 space-y-3">
-                              {/* Destinatário */}
-                              <div className="text-xs text-gray-600 space-y-0.5">
-                                <p>À Secretária Municipal de Educação de Oriximiná</p>
-                                <p>Sra. Secretária,</p>
-                              </div>
-
-                              <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">Interposição de Recursos</p>
-
-                              {/* Dados do candidato — leitura */}
-                              <div className="bg-white rounded-lg border border-orange-100 px-3 py-2.5 space-y-1.5">
-                                <div className="grid grid-cols-1 gap-1 text-xs text-gray-700">
-                                  <p><span className="text-gray-400">Nome completo (sem abreviatura):</span> <span className="font-semibold">{candidato.nome}</span></p>
-                                  <p><span className="text-gray-400">RG:</span> <span className="font-semibold">{candidato.rg ?? '—'}</span></p>
-                                  <p><span className="text-gray-400">CPF:</span> <span className="font-semibold">{candidato.cpf}</span></p>
-                                  <p>
-                                    <span className="text-gray-400">Data de Nascimento:</span>{' '}
-                                    <span className="font-semibold">
-                                      {candidato.dataNasc
-                                        ? new Date(candidato.dataNasc).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
-                                        : '—'}
-                                    </span>
-                                  </p>
-                                  <p><span className="text-gray-400">Telefone / E-mail:</span> <span className="font-semibold">{candidato.telefone} / {candidato.email}</span></p>
-                                </div>
-                              </div>
-
-                              {/* Justificativa */}
-                              <div className="space-y-1">
-                                <p className="text-xs text-gray-600">
-                                  Solicito revisão sob os seguintes argumentos:
-                                </p>
-                                <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Fundamentação / Justificativa:</p>
-                                <textarea
-                                  rows={6}
-                                  value={recursoTexto}
-                                  onChange={e => setRecursoTexto(e.target.value)}
-                                  placeholder="Descreva detalhadamente os motivos do seu recurso..."
-                                  className="w-full px-3 py-2 rounded-lg border border-orange-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-300"
-                                />
-                              </div>
-
-                              {/* Rodapé do documento */}
-                              <p className="text-xs text-gray-500 text-right">
-                                Oriximiná — Pará,{' '}
-                                {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}.
-                              </p>
-                              <div className="border-t border-orange-200 pt-2 text-center">
-                                <p className="text-xs text-gray-400">Assinatura digital do(a) candidato(a)</p>
-                                <p className="text-xs font-semibold text-gray-700">{candidato.nome}</p>
-                              </div>
-
-                              {/* Botões */}
-                              <div className="flex gap-2 pt-1">
-                                <button
-                                  onClick={() => { setRecursoAberto(null); setRecursoTexto(''); }}
-                                  className="flex-1 py-2 rounded-lg border border-gray-200 text-gray-500 text-xs font-semibold hover:bg-gray-50 transition-colors"
-                                >
-                                  Cancelar
-                                </button>
-                                <button
-                                  onClick={() => etapa.id && handleRecurso(etapa.id)}
-                                  disabled={recursoSaving || !recursoTexto.trim() || !etapa.id}
-                                  className="flex-1 py-2 rounded-lg text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 transition-colors"
-                                >
-                                  {recursoSaving ? 'Enviando…' : 'Enviar Recurso'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
+                {/* Justificativa de inabilitação */}
+                {isReprovado && etapa.observacao && (
+                  <div className="border-t border-red-100 px-4 pb-4 pt-3">
+                    <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
+                      <p className="text-xs font-semibold text-red-600 mb-0.5">Justificativa da comissão:</p>
+                      <p className="text-sm text-red-700 leading-relaxed">{etapa.observacao}</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -546,6 +464,124 @@ export default function CandidatoPage() {
         </div>
 
       </main>
+
+      {/* Modal de edição */}
+      {editando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={e => { if (e.target === e.currentTarget) setEditando(false); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
+
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+              <div>
+                <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Editar dados da inscrição</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Documentos não podem ser alterados após o envio.</p>
+              </div>
+              <button onClick={() => setEditando(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              {/* Dados Pessoais */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Dados Pessoais</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'nome',        label: 'Nome completo' },
+                    { key: 'rg',          label: 'RG / CNH' },
+                    { key: 'orgaoEmissor',label: 'Órgão emissor' },
+                    { key: 'telefone',    label: 'Telefone' },
+                    { key: 'email',       label: 'E-mail' },
+                    { key: 'cep',         label: 'CEP' },
+                    { key: 'logradouro',  label: 'Logradouro' },
+                    { key: 'numero',      label: 'Número' },
+                    { key: 'bairro',      label: 'Bairro' },
+                    { key: 'cidade',      label: 'Cidade' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        value={editForm[key] ?? ''}
+                        onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dados Funcionais */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Dados Funcionais</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de Vínculo</label>
+                    <select
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      value={editForm.vinculo ?? ''}
+                      onChange={e => setEditForm(f => ({ ...f, vinculo: e.target.value, ...(e.target.value === 'Temporário' ? { matricula: '' } : {}) }))}
+                    >
+                      <option value="">Selecione</option>
+                      <option>Efetivo</option>
+                      <option>Contratado</option>
+                      <option>Temporário</option>
+                    </select>
+                  </div>
+                  {editForm.vinculo !== 'Temporário' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Matrícula</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        value={editForm.matricula ?? ''}
+                        onChange={e => setEditForm(f => ({ ...f, matricula: e.target.value }))}
+                      />
+                    </div>
+                  )}
+                  {[
+                    { key: 'cargo',          label: 'Cargo' },
+                    { key: 'escola',         label: 'Escola' },
+                    { key: 'municipio',      label: 'Município' },
+                    { key: 'tempoServico',   label: 'Tempo de Serviço' },
+                    { key: 'formacao',       label: 'Formação' },
+                    { key: 'especializacao', label: 'Especialização' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        value={editForm[key] ?? ''}
+                        onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Documentos — bloqueados */}
+              <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 flex items-center gap-3">
+                <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <p className="text-xs text-gray-400">Os documentos enviados estão em análise pela comissão e não podem ser substituídos.</p>
+              </div>
+
+              {editError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{editError}</p>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex gap-3 rounded-b-2xl">
+              <button onClick={() => setEditando(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleSaveEdit} disabled={editSaving}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity"
+                style={{ background: '#001b3d' }}>
+                {editSaving ? 'Salvando…' : 'Salvar alterações'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
 function formatCpf(value: string) {
@@ -17,7 +18,8 @@ function formatCpf(value: string) {
 export default function LoginPage() {
   const router = useRouter();
   const [cpf, setCpf] = useState('');
-  const [dataNasc, setDataNasc] = useState('');
+  const [senha, setSenha] = useState('');
+  const [showSenha, setShowSenha] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -30,13 +32,13 @@ export default function LoginPage() {
       const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cpf, dataNasc }),
+        body: JSON.stringify({ cpf, senha }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || 'CPF ou data de nascimento incorretos.');
+        setError(data.message || 'CPF ou senha incorretos.');
         return;
       }
 
@@ -68,7 +70,7 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-8 py-7 space-y-5">
           <p className="text-sm text-gray-500 text-center -mt-1">
-            Acesse com seu CPF e data de nascimento cadastrados na inscrição.
+            Acesse com seu CPF e senha cadastrados na inscrição.
           </p>
 
           <div>
@@ -86,14 +88,22 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
-            <input
-              required
-              type="date"
-              value={dataNasc}
-              onChange={e => setDataNasc(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <div className="relative">
+              <input
+                required
+                type={showSenha ? 'text' : 'password'}
+                value={senha}
+                onChange={e => setSenha(e.target.value)}
+                placeholder="Sua senha cadastrada na inscrição"
+                className="w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              />
+              <button type="button" tabIndex={-1}
+                onClick={() => setShowSenha(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (
