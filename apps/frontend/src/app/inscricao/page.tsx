@@ -2,11 +2,101 @@
 
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ChevronRight, ChevronLeft, CheckCircle, Upload, User, Briefcase, FileText } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+
+const ESCOLAS: { nome: string; endereco: string }[] = [
+  { nome: 'CRECHE MUNICIPAL PROFESSORA CONSTÂNCIA DOS SANTOS LOPES', endereco: 'R. João Batista de Oliveira, S/N, São Lázaro — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL AMELIA FERRARI', endereco: 'Comunidade Castanhal, S/N, Lago Sapucuá — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL ANA MARIA MILEO VIANA', endereco: 'PA 254 Km 43, Comunidade Novo Horizonte, S/N, Zona Rural — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL ANGELO AUGUSTO DE OLIVEIRA', endereco: 'Lago do Sapucuá, S/N, Comunidade Boa Nova — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL ANTONIO CALDERARO', endereco: 'BR 163 Estrada do BEC Km 48 Murta, S/N' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL BALDOINO MELO', endereco: 'Comunidade Serrinha, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL BOA VISTA', endereco: 'Boa Vista, S/N, Alto Rio Trombetas — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL BOA VISTA II', endereco: 'Oiteiro, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL BOM JESUS', endereco: 'Varre Vento, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL CASINHA FELIZ', endereco: 'Ramal do Balualto, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL CONSTANTINA TEODORO DOS SANTOS', endereco: 'Cachoeira Porteira, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL CORACAO DE JESUS', endereco: 'Rio Cachoeiry, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL DEPUTADO GABRIEL GUERREIRO', endereco: 'Tv. Luiz Inácio Lula da Silva, 1598, Penta — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL FE EM DEUS', endereco: 'Ramal do Babaçu, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL HELVECIO GUERREIRO', endereco: 'Av. Independência, 2867, Santa Terezinha — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL INDIGENA WAI WAI', endereco: 'Aldeia Indígena Wai Wai, S/N, Mapuera — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL JOAO PAULO II', endereco: 'Comunidade Jauary, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL LAURO PICANCO VIANA', endereco: 'Boca dos Currais, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL LUIZ GONZAGA VIANA', endereco: 'Lago do Sapucuá, 0, Comunidade Amapá — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL LUIZ GONZAGA VIANA FILHO', endereco: 'Lago Sapucuá, S/N, Ascensão — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL MACEDONIA', endereco: 'Lago do Sapucuá, S/N, Comunidade Nova Macedônia — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL MANOEL RAMOS DE OLIVEIRA', endereco: 'Lago Maria Pixi, S/N, Espírito Santo — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL MARIA POMPEIA IUDICE DA SILVA', endereco: 'R. Joveniano Ferreira de Barros, 1590, São Pedro — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA APARECIDA', endereco: 'Boa Vista, S/N, Cuminá — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA DA PIEDADE', endereco: 'Aracuã de Baixo, S/N, Comunidade Qui. Aracuã de Baixo — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA DAS GRACAS', endereco: 'Rio Cuminá, S/N, Comunidade Água Fria — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA DE FATIMA', endereco: 'Bacabal, S/N, Comunidade Bacabal — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA DE NAZARE', endereco: 'Samaúma, S/N, Samaúma II — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA DE SANTA ANA', endereco: 'Lago Acapuzinho, S/N, Acapú — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA DO PERPETUO SOCORRO', endereco: 'Lago do Moura, S/N, Moura — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOSSA SENHORA DO ROSARIO', endereco: 'Caipuru de Fora, S/N, Caipuru — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOVA ALIANCA', endereco: 'Comunidade Nova Aliança, S/N, Acapú III — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOVA BETEL', endereco: 'BR 163 Estrada do BEC Km 12, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOVA ESPERANCA (Cidade Nova)', endereco: 'R. Marechal Castelo Branco, 4027, Cidade Nova — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOVA ESPERANCA (Erepecu)', endereco: 'Rio Erepecu, S/N, Erepecu — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOVO ISRAEL', endereco: 'Lago do Ajudante, S/N, Ajudante — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOVO MILENIO', endereco: 'Caipuru, S/N, Batata — Caipuru — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL NOVO PARAISO', endereco: 'Ramal do Poção, S/N, Bom Jesus — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PEDRO CARLOS DE OLIVEIRA', endereco: 'Ramal do Carapanã, S/N, Carapanã — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PROF.ª ADELIA FIGUEIRA', endereco: 'R. Dr. Lauro Sodré, 1653, Santa Luzia — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PROF.ª IRACEMA GIVONI', endereco: 'R. Dom Floriano, S/N, Santíssimo Sacramento — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PROF.ª JOANA BANDEIRA MONTEIRO', endereco: 'Tv. César Guerreiro, 490, Santa Terezinha — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PROF.ª MARIA QUEIROZ DE SOUZA', endereco: 'R. Marechal Castelo Branco, S/N, Santa Luzia — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PROFESSOR ASSUNCAO', endereco: 'R. 15 de Novembro, 2581, Centro — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL RAIMUNDO MUNIZ DE FIGUEIREDO', endereco: 'R. Pedro Carlos de Oliveira, 1603, Santa Luzia — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL RAIMUNDO VIEIRA DOS SANTOS', endereco: 'Tapagem, S/N, Mãe Cué — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA INES', endereco: 'Lago do Flexal, S/N, Flexal — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA LUZIA', endereco: 'Lago Sacuri, S/N, Sacuri — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA MARIA (Erepecu)', endereco: 'Quilombo Erepecu, S/N, Erepecu — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA MARIA (Tapixauã)', endereco: 'Lago Tapixauã, S/N, Tapixauã — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA MARIA GORETTI (Jacupá)', endereco: 'Lago Jacupá, S/N, Jacupá — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA MARIA GORETTI (Santa Terezinha)', endereco: 'R. 7 de Setembro, 2772, Santa Terezinha — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA TEREZINHA (Axipicá)', endereco: 'Lago Axipicá, S/N, Axipicá — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA TEREZINHA (Ajará)', endereco: 'Lago Sapucuá, S/N, Comunidade Ajará — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTISSIMA TRINDADE', endereco: 'Rio Erepecuru, S/N, Cachoeira da Pancada — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTO ANTONIO (Campos Gerais)', endereco: 'Ramal dos Três — Campos Gerais Km 3, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTO ANTONIO (Alambique)', endereco: 'Ramal do Alambique, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTO ANTONIO (Xiriri)', endereco: 'Lago Xiriri, S/N, Comunidade Xiriri — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTO ANTONIO (Jamari)', endereco: 'Jamari, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO DOMINGOS SAVIO', endereco: 'Lago Itapecuru, S/N, Itapecuru — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO FRANCISCO', endereco: 'Araçá de Fora, S/N, Araçá — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO FRANCISCO DE ASSIS', endereco: 'Comunidade São Francisco de Assis, S/N, Poço Fundo — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO FRANCISCO DE CANINDE', endereco: 'Lago Jarauaca, S/N, Jarauaca — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO JOAO', endereco: 'Aracuã do Meio, S/N, Varre Vento — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO JOAO BATISTA', endereco: 'Lago Caipuru, S/N, Caipuru — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO LAZARO (Ananizal)', endereco: 'Ramal do Jatuarana, S/N, Ananizal — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO LAZARO (Curupira)', endereco: 'Lago Curupira, S/N, Curupira — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO NICOLAU', endereco: 'Comunidade São Nicolau, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO PAULO', endereco: 'Comunidade São Paulo Rapa Pau, S/N, Rapa Pau — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO SEBASTIAO (Lago Salgado)', endereco: 'Rio Cuminá, S/N, Lago Salgado I — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SAO SEBASTIAO (BEC Km 28)', endereco: 'BR 163 Estrada do BEC Km 28 Tabocal, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SENADOR ALOYSIO DA COSTA CHAVES', endereco: 'R. Marechal Castelo Branco, 3150, Perpétuo Socorro — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SENADOR LAMEIRA BITTENCOURT', endereco: 'R. Barão do Rio Branco, 1830, Nossa Senhora de Fátima — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL TANCREDO NEVES', endereco: 'Comunidade Abuí Grande, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL VITORIA REGIA', endereco: 'Monte Múria, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL BOA ESPERANCA', endereco: 'Tv. João Estumano, S/N, São Pedro — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL CRIANCA ESPERANCA', endereco: 'R. Marechal Castelo Branco, 3882, Cidade Nova — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL HILDA MARIA VIANA DA SILVA', endereco: 'São Francisco — Rio Cuminá, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL LAURA WANDERLEY DINIZ', endereco: 'Tv. Cazuza Guerreiro, S/N, Santa Terezinha — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL FLORINDA GUERREIRO MILEO', endereco: 'Tv. José Gabriel Guerreiro, 1811, Santíssimo — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL MARIA PERPETUA ANDRADE RIBEIRO', endereco: 'Tv. Jonathas Athias, 1918, Nossa Senhora das Graças — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PLACIDA FARIAS DE BRITO', endereco: 'R. Sete de Setembro, 3860, São José Operário — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PROF.ª AFONSINA ELINDA ARAGAO DE SOUZA', endereco: 'Tv. João Estumano, 1097, São Pedro — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL PROF.ª AMELIA FERRARI', endereco: 'R. Pedro Carlos de Oliveira, 2020, Centro — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL SANTA ROSA', endereco: 'Tv. Antonio Bentes de Oliveira, 2122, Nossa Senhora das Graças' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL ALTINO BENTES', endereco: 'Ramal do Jatuarana Km 08, S/N — CEP 68270-000' },
+  { nome: 'ESCOLA MUNICIPAL DE ENSINO FUNDAMENTAL JOAO PAULO I', endereco: 'Tv. Jonathas Pontes Athias, 1248, Nossa Senhora das Graças' },
+];
 
 const steps = [
   { id: 1, label: 'Dados Pessoais', icon: User },
@@ -49,7 +139,7 @@ type FormState = {
   nome: string; cpf: string; rg: string; orgaoEmissor: string; dataNasc: string;
   sexo: string; estadoCivil: string; telefone: string; email: string;
   cep: string; logradouro: string; numero: string; bairro: string; cidade: string;
-  matricula: string; cargo: string; escola: string; municipio: string;
+  vinculo: string; matricula: string; cargo: string; escola: string; municipio: string;
   tempoServico: string; formacao: string; especializacao: string;
   declaracaoDados: boolean;
   docRgCnh: File | null;
@@ -65,6 +155,47 @@ type FormState = {
   docLotacao: File | null;
 };
 
+const DRAFT_KEY = 'pdage_inscricao_draft';
+
+type FormDraft = Omit<FormState,
+  'docRgCnh'|'docCpf'|'docResidencia'|'docTituloEleitor'|'docQuitacao'|
+  'docReservista'|'docDiplomaPedagogia'|'docDiplomaOutras'|'docPosGraduacao'|'docLotacao'
+>;
+
+function loadDraft(): { form: FormDraft; step: number } | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function saveDraft(form: FormState, step: number) {
+  const draft: FormDraft = {
+    nome: form.nome, cpf: form.cpf, rg: form.rg, orgaoEmissor: form.orgaoEmissor,
+    dataNasc: form.dataNasc, sexo: form.sexo, estadoCivil: form.estadoCivil,
+    telefone: form.telefone, email: form.email, cep: form.cep,
+    logradouro: form.logradouro, numero: form.numero, bairro: form.bairro, cidade: form.cidade,
+    vinculo: form.vinculo, matricula: form.matricula, cargo: form.cargo,
+    escola: form.escola, municipio: form.municipio, tempoServico: form.tempoServico,
+    formacao: form.formacao, especializacao: form.especializacao,
+    diplomaTipo: form.diplomaTipo, declaracaoDados: form.declaracaoDados,
+  };
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: draft, step }));
+}
+
+const INITIAL_FORM: FormState = {
+  nome: '', cpf: '', rg: '', orgaoEmissor: '', dataNasc: '', sexo: '', estadoCivil: '',
+  telefone: '', email: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '',
+  vinculo: '', matricula: '', cargo: '', escola: '', municipio: 'Oriximiná',
+  tempoServico: '', formacao: '', especializacao: '',
+  docRgCnh: null, docCpf: null, docResidencia: null,
+  docTituloEleitor: null, docQuitacao: null, docReservista: null,
+  diplomaTipo: '', docDiplomaPedagogia: null, docDiplomaOutras: null,
+  docPosGraduacao: null, docLotacao: null,
+  declaracaoDados: false,
+};
+
 export default function InscricaoPage() {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
@@ -73,19 +204,39 @@ export default function InscricaoPage() {
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showResume, setShowResume] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState<{ form: FormDraft; step: number } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [form, setForm] = useState<FormState>({
-    nome: '', cpf: '', rg: '', orgaoEmissor: '', dataNasc: '', sexo: '', estadoCivil: '',
-    telefone: '', email: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '',
-    matricula: '', cargo: '', escola: '', municipio: 'Oriximiná',
-    tempoServico: '', formacao: '', especializacao: '',
-    docRgCnh: null, docCpf: null, docResidencia: null,
-    docTituloEleitor: null, docQuitacao: null, docReservista: null,
-    diplomaTipo: '', docDiplomaPedagogia: null, docDiplomaOutras: null,
-    docPosGraduacao: null, docLotacao: null,
-    declaracaoDados: false,
-  });
+  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+
+  // Detecta rascunho salvo ao montar
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && draft.form.nome) {
+      setPendingDraft(draft);
+      setShowResume(true);
+    }
+  }, []);
+
+  // Salva rascunho automaticamente a cada mudança (exceto arquivos)
+  useEffect(() => {
+    if (submitted) return;
+    saveDraft(form, step);
+  }, [form, step, submitted]);
+
+  const applyDraft = () => {
+    if (!pendingDraft) return;
+    setForm(f => ({ ...f, ...pendingDraft.form }));
+    setStep(pendingDraft.step);
+    setShowResume(false);
+  };
+
+  const discardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setShowResume(false);
+    setPendingDraft(null);
+  };
 
   const set = <K extends keyof FormState>(field: K, value: FormState[K]) =>
     setForm(f => ({ ...f, [field]: value }));
@@ -188,6 +339,7 @@ export default function InscricaoPage() {
       }
 
       localStorage.setItem('pdage_inscrito', '1');
+      localStorage.removeItem(DRAFT_KEY);
       setProtocolo(data.protocolo ?? '');
       setSubmitted(true);
     } catch {
@@ -240,7 +392,8 @@ export default function InscricaoPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4 text-sm text-gray-700">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Dados Funcionais</p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                <span className="text-gray-400">Matrícula</span><span className="font-medium">{form.matricula}</span>
+                <span className="text-gray-400">Vínculo</span><span className="font-medium">{form.vinculo}</span>
+                {form.vinculo !== 'Temporário' && <><span className="text-gray-400">Matrícula</span><span className="font-medium">{form.matricula}</span></>}
                 <span className="text-gray-400">Cargo</span><span className="font-medium">{form.cargo}</span>
                 <span className="text-gray-400">Escola</span><span className="font-medium">{form.escola}</span>
                 <span className="text-gray-400">Município</span><span className="font-medium">{form.municipio}</span>
@@ -296,18 +449,33 @@ export default function InscricaoPage() {
     );
   }
 
+  const normalizeStr = (s: string) =>
+    s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+
   const FileCard = ({
     field, tag, label, hint, optional,
   }: {
     field: keyof FormState; tag: string; label: string; hint?: string; optional?: boolean;
   }) => {
     const file = form[field] as File | null;
+    const nameWithoutExt = file ? file.name.replace(/\.pdf$/i, '') : '';
+    const normLabel = normalizeStr(label);
+    const normFile  = normalizeStr(nameWithoutExt);
+    const nameOk = !file || normFile.length < 2 || normLabel.includes(normFile) || normFile.includes(normLabel);
+    const isPdf = !file || file.name.toLowerCase().endsWith('.pdf');
+
+    let borderStyle = optional
+      ? 'border-gray-200 hover:border-gray-300 bg-white'
+      : 'border-gray-300 hover:border-blue-300 bg-white';
+    if (file && isPdf && nameOk) borderStyle = 'border-green-400 bg-green-50';
+    if (file && (!isPdf || !nameOk)) borderStyle = 'border-orange-400 bg-orange-50';
+
     return (
-      <div className={`border-2 border-dashed rounded-xl p-4 transition-colors ${file ? 'border-green-400 bg-green-50' : optional ? 'border-gray-200 hover:border-gray-300' : 'border-gray-300 hover:border-blue-300'}`}>
+      <div className={`border-2 border-dashed rounded-xl p-4 transition-colors ${borderStyle}`}>
         <div className="flex items-start gap-3">
           <span
             className="flex-shrink-0 w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center text-white mt-0.5"
-            style={{ background: optional ? '#6b7280' : '#001b3d' }}
+            style={{ background: file && (!isPdf || !nameOk) ? '#ea580c' : optional ? '#6b7280' : '#001b3d' }}
           >{tag}</span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-700 mb-0.5">
@@ -315,20 +483,35 @@ export default function InscricaoPage() {
               {optional && <span className="ml-1.5 text-xs font-normal text-gray-400">(opcional)</span>}
             </p>
             {hint && <p className="text-xs text-gray-400 mb-2">{hint}</p>}
+            <p className="text-xs text-gray-400 mb-2">
+              Nomeie o arquivo como: <span className="font-semibold text-gray-600">{label}.pdf</span>
+            </p>
             <label
               className="inline-flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium text-white"
-              style={{ background: file ? '#15803d' : '#001b3d' }}
+              style={{ background: file && (!isPdf || !nameOk) ? '#ea580c' : file ? '#15803d' : '#001b3d' }}
             >
               <Upload className="w-3.5 h-3.5" />
               {file ? 'Trocar arquivo' : 'Selecionar PDF'}
               <input
                 type="file"
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png"
+                accept=".pdf"
                 onChange={e => handleFile(field, e)}
               />
             </label>
-            {file && <p className="text-xs text-green-700 mt-1.5 font-medium truncate">✓ {file.name}</p>}
+            {file && isPdf && nameOk && (
+              <p className="text-xs text-green-700 mt-1.5 font-medium truncate">✓ {file.name}</p>
+            )}
+            {file && !isPdf && (
+              <p className="text-xs text-orange-600 mt-1.5 font-medium">
+                ⚠ Apenas arquivos PDF são aceitos. Converta o arquivo e tente novamente.
+              </p>
+            )}
+            {file && isPdf && !nameOk && (
+              <p className="text-xs text-orange-600 mt-1.5 font-medium">
+                ⚠ Renomeie o arquivo para <strong>{label}.pdf</strong> antes de continuar.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -338,6 +521,39 @@ export default function InscricaoPage() {
   return (
     <>
       <Header />
+
+      {/* Modal: retomar rascunho */}
+      {showResume && pendingDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#f0f7ff' }}>
+              <FileText className="w-7 h-7" style={{ color: '#001b3d' }} />
+            </div>
+            <h3 className="text-lg font-bold mb-2" style={{ color: '#001b3d' }}>Rascunho encontrado</h3>
+            <p className="text-sm text-gray-500 mb-1">
+              Você começou uma inscrição anteriormente como:
+            </p>
+            <p className="font-semibold text-gray-800 mb-1">{pendingDraft.form.nome || '—'}</p>
+            <p className="text-xs text-gray-400 mb-6">Etapa {pendingDraft.step} de 4 — deseja continuar de onde parou?</p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={applyDraft}
+                className="w-full py-3 rounded-xl font-bold text-sm"
+                style={{ background: '#001b3d', color: '#ffd21f' }}
+              >
+                Continuar de onde parei
+              </button>
+              <button
+                onClick={discardDraft}
+                className="w-full py-2.5 rounded-xl font-medium text-sm border border-gray-200 text-gray-500 hover:bg-gray-50"
+              >
+                Começar do zero
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="min-h-screen pt-20 pb-16" style={{ backgroundColor: '#f4f6f8' }}>
 
         {/* Page header */}
@@ -492,23 +708,70 @@ export default function InscricaoPage() {
                 <h2 className="text-lg font-bold mb-4" style={{ color: '#001b3d' }}>Dados Funcionais</h2>
                 <div className={fieldsetClass}>
                   <div>
-                    <label className={labelClass}>Matrícula Funcional *</label>
-                    <input required inputMode="numeric" className={inputClass} value={form.matricula} onChange={e => set('matricula', mask.numeric(e.target.value))} placeholder="Nº de matrícula" maxLength={20} />
+                    <label className={labelClass}>Tipo de Vínculo *</label>
+                    <select
+                      required
+                      className={inputClass}
+                      value={form.vinculo}
+                      onChange={e => {
+                        set('vinculo', e.target.value);
+                        if (e.target.value === 'Temporário') set('matricula', '');
+                      }}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="Efetivo">Efetivo</option>
+                      <option value="Contratado">Contratado</option>
+                      <option value="Temporário">Temporário</option>
+                    </select>
                   </div>
                   <div>
                     <label className={labelClass}>Cargo Atual *</label>
                     <input required className={inputClass} value={form.cargo} onChange={e => set('cargo', e.target.value)} placeholder="Ex: Professor(a)" />
                   </div>
                 </div>
-                <div>
+                {(form.vinculo === 'Efetivo' || form.vinculo === 'Contratado') && (
+                  <div>
+                    <label className={labelClass}>Matrícula Funcional *</label>
+                    <input required inputMode="numeric" className={inputClass} value={form.matricula} onChange={e => set('matricula', mask.numeric(e.target.value))} placeholder="Nº de matrícula" maxLength={20} />
+                  </div>
+                )}
+                <div className="relative">
                   <label className={labelClass}>Escola / Unidade de Ensino *</label>
-                  <input required className={inputClass} value={form.escola} onChange={e => set('escola', e.target.value)} placeholder="Nome da escola" />
+                  <input
+                    required
+                    autoComplete="off"
+                    className={inputClass}
+                    value={form.escola}
+                    onChange={e => { set('escola', e.target.value); }}
+                    onFocus={e => { if (!form.escola) set('escola', ''); }}
+                    placeholder="Digite para buscar a escola..."
+                  />
+                  {(() => {
+                    const q = form.escola.trim().toLowerCase();
+                    const matches = q.length >= 2
+                      ? ESCOLAS.filter(e => e.nome.toLowerCase().includes(q) && e.nome !== form.escola)
+                      : [];
+                    if (!matches.length) return null;
+                    return (
+                      <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto text-sm">
+                        {matches.map(escola => (
+                          <li
+                            key={escola.nome}
+                            onMouseDown={e => { e.preventDefault(); set('escola', escola.nome); }}
+                            className="px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-0"
+                          >
+                            <p className="font-medium text-gray-800 leading-snug">{escola.nome}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{escola.endereco}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className={labelClass}>Tempo de Serviço na Educação *</label>
                   <select required className={inputClass} value={form.tempoServico} onChange={e => set('tempoServico', e.target.value)}>
                     <option value="">Selecione</option>
-                    <option>Menos de 2 anos</option>
                     <option>2 a 5 anos</option>
                     <option>5 a 10 anos</option>
                     <option>10 a 15 anos</option>
@@ -545,7 +808,7 @@ export default function InscricaoPage() {
               <div className="space-y-4">
                 <h2 className="text-lg font-bold mb-1" style={{ color: '#001b3d' }}>Documentos</h2>
                 <p className="text-sm text-gray-500 mb-2">
-                  Envie todos os arquivos em PDF (ou JPG/PNG). Tamanho máximo: 5 MB por arquivo.
+                  Envie todos os documentos em <strong>PDF</strong>. Nomeie cada arquivo conforme indicado no campo. Tamanho máximo: 5 MB por arquivo.
                 </p>
 
                 {fileError && (
@@ -683,7 +946,8 @@ export default function InscricaoPage() {
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-3 text-sm text-gray-700">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Dados Funcionais</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                    <span className="text-gray-400">Matrícula</span><span className="font-medium">{form.matricula}</span>
+                    <span className="text-gray-400">Vínculo</span><span className="font-medium">{form.vinculo}</span>
+                    {form.vinculo !== 'Temporário' && <><span className="text-gray-400">Matrícula</span><span className="font-medium">{form.matricula}</span></>}
                     <span className="text-gray-400">Cargo</span><span className="font-medium">{form.cargo}</span>
                     <span className="text-gray-400">Escola</span><span className="font-medium">{form.escola}</span>
                     <span className="text-gray-400">Município</span><span className="font-medium">{form.municipio}</span>

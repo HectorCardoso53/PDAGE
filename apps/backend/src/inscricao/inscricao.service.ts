@@ -1,5 +1,6 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { CriarInscricaoDto } from './dto/criar-inscricao.dto';
 import { EtapaTipo } from '@prisma/client';
 
@@ -19,7 +20,10 @@ function pickFilename(files: Record<string, any[]>, field: string): string | und
 
 @Injectable()
 export class InscricaoService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mail: MailService,
+  ) {}
 
   private async gerarProtocolo(): Promise<string> {
     const count = await this.prisma.inscricao.count();
@@ -87,8 +91,15 @@ export class InscricaoService {
       },
     });
 
+    // Envia e-mail de confirmação (fire-and-forget)
+    this.mail.enviarConfirmacaoInscricao({
+      nome: candidato.nome,
+      email: candidato.email,
+      protocolo,
+    }).catch(() => {});
+
     return {
-      protocolo: candidato.inscricoes[0].protocolo,
+      protocolo,
       nome: candidato.nome,
       email: candidato.email,
     };
