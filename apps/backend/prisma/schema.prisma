@@ -30,6 +30,15 @@ model Candidato {
   tempoServico  String?
   formacao      String?
   especializacao String?
+  docRgCnh         String?
+  docCpf           String?
+  docResidencia    String?
+  docTituloEleitor String?
+  docQuitacao      String?
+  docReservista    String?
+  docDiploma       String?
+  docPosGraduacao  String?
+  docLotacao       String?
   inscricoes    Inscricao[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -37,7 +46,7 @@ model Candidato {
 
 model Inscricao {
   id          String        @id @default(cuid())
-  protocolo   String        @unique @default(cuid())
+  protocolo   String        @unique
   candidatoId String
   candidato   Candidato     @relation(fields: [candidatoId], references: [id])
   etapas      EtapaStatus[]
@@ -52,12 +61,15 @@ model EtapaStatus {
   status      StatusEtapa @default(PENDENTE)
   pontuacao   Float?
   observacao  String?
+  recurso     String?
+  docChecks   String?
   updatedAt   DateTime    @updatedAt
 
   @@unique([inscricaoId, etapa])
 }
 
 enum EtapaTipo {
+  INSCRICAO
   HABILITACAO_DOCUMENTAL
   AVALIACAO_COGNITIVA
   QUALIFICACAO_CURRICULAR

@@ -64,3 +64,9 @@ docker/nginx/certs/
 
 # Local dev only
 docker-compose.override.yml
+
+# Uploaded files
+apps/backend/uploads/
+
+# Temporary SQL scripts
+del.sql

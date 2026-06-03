@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Clock } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
 
 const navLinks = [
@@ -13,6 +14,15 @@ const navLinks = [
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasAccount, setHasAccount] = useState(false);
+  const pathname = usePathname();
+  const isInscricaoPage = pathname === '/inscricao';
+
+  useEffect(() => {
+    const token = localStorage.getItem('meritus_token');
+    const inscrito = localStorage.getItem('pdage_inscrito');
+    setHasAccount(!!(token || inscrito));
+  }, []);
 
   const handleNavClick = (href: string) => {
     setIsMobileMenuOpen(false);
@@ -36,10 +46,7 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
-            <button
-              onClick={() => handleNavClick('#inicio')}
-              className="flex items-center gap-3 group"
-            >
+            <a href="/" className="flex items-center gap-3 group">
               <div className="relative flex-shrink-0">
                 <Image
                   src="/logo.png"
@@ -58,7 +65,7 @@ export default function Header() {
                   Gestores Escolares
                 </span>
               </div>
-            </button>
+            </a>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
@@ -75,16 +82,23 @@ export default function Header() {
 
             {/* CTA + Mobile Toggle */}
             <div className="flex items-center gap-3">
-              <button
-                disabled
-                className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold cursor-not-allowed select-none"
-                style={{ background: '#ffd21f', color: '#001b3d', opacity: 0.85 }}
-                title="Inscrições ainda não abertas"
-              >
-                <Clock className="w-4 h-4" />
-                <span className="hidden md:inline">Inscrições em Breve</span>
-                <span className="md:hidden">Em Breve</span>
-              </button>
+              {hasAccount ? (
+                <a
+                  href="/login"
+                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                  style={{ background: '#ffd21f', color: '#001b3d' }}
+                >
+                  Área do Candidato
+                </a>
+              ) : !isInscricaoPage ? (
+                <a
+                  href="/inscricao"
+                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                  style={{ background: '#ffd21f', color: '#001b3d' }}
+                >
+                  Inscreva-se
+                </a>
+              ) : null}
 
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -132,22 +146,23 @@ export default function Header() {
                   {link.label}
                 </motion.button>
               ))}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: navLinks.length * 0.05, duration: 0.2 }}
-                className="mt-2 pt-2"
-                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                <button
-                  disabled
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-bold cursor-not-allowed"
-                  style={{ background: '#ffd21f', color: '#001b3d', opacity: 0.85 }}
+              {(hasAccount || !isInscricaoPage) && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: navLinks.length * 0.05, duration: 0.2 }}
+                  className="mt-2 pt-2"
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
                 >
-                  <Clock className="w-4 h-4" />
-                  Inscrições em Breve
-                </button>
-              </motion.div>
+                  <a
+                    href={hasAccount ? '/login' : '/inscricao'}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-bold"
+                    style={{ background: '#ffd21f', color: '#001b3d' }}
+                  >
+                    {hasAccount ? 'Área do Candidato' : 'Inscreva-se'}
+                  </a>
+                </motion.div>
+              )}
             </nav>
           </motion.div>
         )}

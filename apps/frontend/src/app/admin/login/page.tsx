@@ -5,19 +5,10 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { apiFetch } from '@/lib/api';
 
-function formatCpf(value: string) {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 11)
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-}
-
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const router = useRouter();
-  const [cpf, setCpf] = useState('');
-  const [dataNasc, setDataNasc] = useState('');
+  const [login, setLogin] = useState('');
+  const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -27,24 +18,23 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await apiFetch('/api/auth/login', {
+      const res = await apiFetch('/api/auth/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cpf, dataNasc }),
+        body: JSON.stringify({ login, senha }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || 'CPF ou data de nascimento incorretos.');
+        setError(data.message || 'Credenciais inválidas.');
         return;
       }
 
-      localStorage.setItem('meritus_token', data.access_token);
-      localStorage.setItem('meritus_candidato', JSON.stringify(data.candidato));
-      router.push('/candidato');
+      localStorage.setItem('meritus_admin_token', data.access_token);
+      router.push('/admin');
     } catch {
-      setError('Erro de conexão. Tente novamente em instantes.');
+      setError('Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -52,46 +42,40 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ backgroundColor: '#f4f6f8' }}>
-
-      {/* Card */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
-
-        {/* Header */}
         <div className="px-8 pt-8 pb-6 text-center" style={{ background: '#001b3d' }}>
           <div className="flex justify-center mb-3">
             <Image src="/logo.png" alt="Meritus" width={48} height={48} className="drop-shadow" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">Área do Candidato</h1>
-          <p className="text-sm" style={{ color: '#38b6ff' }}>Meritus · Gestores Escolares · Oriximiná/PA</p>
+          <h1 className="text-2xl font-bold text-white mb-1">Painel Administrativo</h1>
+          <p className="text-sm" style={{ color: '#ffd21f' }}>Meritus · Gestores Escolares · SEMED</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-8 py-7 space-y-5">
           <p className="text-sm text-gray-500 text-center -mt-1">
-            Acesse com seu CPF e data de nascimento cadastrados na inscrição.
+            Acesso restrito à equipe da Secretaria de Educação.
           </p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Login</label>
             <input
               required
               type="text"
-              inputMode="numeric"
-              value={cpf}
-              onChange={e => setCpf(formatCpf(e.target.value))}
-              placeholder="000.000.000-00"
-              maxLength={14}
+              value={login}
+              onChange={e => setLogin(e.target.value)}
+              placeholder="login de administrador"
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
             <input
               required
-              type="date"
-              value={dataNasc}
-              onChange={e => setDataNasc(e.target.value)}
+              type="password"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              placeholder="••••••••"
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
             />
           </div>
@@ -108,9 +92,8 @@ export default function LoginPage() {
             className="w-full py-3 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-60"
             style={{ background: '#001b3d' }}
           >
-            {loading ? 'Entrando...' : 'Acessar minha área'}
+            {loading ? 'Entrando...' : 'Acessar painel'}
           </button>
-
         </form>
       </div>
 

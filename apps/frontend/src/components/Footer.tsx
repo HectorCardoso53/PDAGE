@@ -117,11 +117,11 @@ export default function Footer() {
               <div>
                 <p className="text-xs text-gray-500 mb-1 uppercase tracking-wider">E-mail</p>
                 <a
-                  href="mailto:educacao@oriximina.pa.gov.br"
+                  href="mailto:semed.pmo@oriximina.pa.gov.br"
                   className="text-sm transition-colors duration-200"
                   style={{ color: '#38b6ff' }}
                 >
-                  educacao@oriximina.pa.gov.br
+                  semed.pmo@oriximina.pa.gov.br
                 </a>
               </div>
 
