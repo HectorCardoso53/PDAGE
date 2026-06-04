@@ -356,6 +356,15 @@ export default function CandidatoPage() {
                         {etapa.label}
                       </span>
                     </div>
+                    {(ETAPA_CRONOGRAMA[etapa.tipo]?.length ?? 0) > 0 && (
+                      <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        {ETAPA_CRONOGRAMA[etapa.tipo][0].data}
+                        {ETAPA_CRONOGRAMA[etapa.tipo].length > 1 && (
+                          <> · {ETAPA_CRONOGRAMA[etapa.tipo][ETAPA_CRONOGRAMA[etapa.tipo].length - 1].data}</>
+                        )}
+                      </p>
+                    )}
                     {etapa.pontuacao !== null && etapa.tipo !== 'INSCRICAO' && etapa.tipo !== 'HABILITACAO_DOCUMENTAL' && (
                       <p className="text-xs text-gray-500 mt-0.5">
                         Pontuação: <span className="font-semibold text-gray-700">{etapa.pontuacao} pts</span>
