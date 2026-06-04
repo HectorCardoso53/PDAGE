@@ -302,7 +302,11 @@ export default function CandidatoPage() {
         {/* Banner: documentos faltando */}
         {(() => {
           const problema = data.docsComProblema ?? [];
-          const faltando = DOCS_INFO.filter(({ field }) => !candidato[field] || problema.includes(field as string));
+          const faltando = DOCS_INFO.filter(({ field }) => {
+            if (field === 'docReservista' && candidato.sexo !== 'Masculino') return false;
+            if (field === 'docPosGraduacao' && (!candidato.especializacao || candidato.especializacao === 'Não')) return false;
+            return !candidato[field] || problema.includes(field as string);
+          });
           if (faltando.length === 0 || docUploadOk) return null;
           return (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex gap-4 shadow-sm">
@@ -725,7 +729,11 @@ export default function CandidatoPage() {
               </button>
             </div>
             <div className="px-6 py-5 space-y-3">
-              {DOCS_INFO.map(({ field, label }) => {
+              {DOCS_INFO.filter(({ field }) => {
+                if (field === 'docReservista') return candidato.sexo === 'Masculino';
+                if (field === 'docPosGraduacao') return !!(candidato.especializacao && candidato.especializacao !== 'Não');
+                return true;
+              }).map(({ field, label }) => {
                 const jaEnviado = !!candidato[field];
                 const temProblema = (data.docsComProblema ?? []).includes(field as string);
                 const novoArquivo = docFiles[field] ?? null;
