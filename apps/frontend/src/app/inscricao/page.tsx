@@ -235,7 +235,7 @@ export default function InscricaoPage() {
   const applyDraft = () => {
     if (!pendingDraft) return;
     setForm(f => ({ ...f, ...pendingDraft.form }));
-    setStep(pendingDraft.step);
+    setStep(Math.min(pendingDraft.step, 3));
     setShowResume(false);
   };
 
@@ -303,6 +303,8 @@ export default function InscricaoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const docErr = validateDocs();
+    if (docErr) { setSubmitError(docErr); setShowConfirm(false); setStep(3); setFileError(docErr); return; }
     setSubmitError('');
     setSubmitting(true);
 

@@ -30,7 +30,6 @@ const MEMBROS_COMISSAO = [
   { nome: 'Maria Laise Picanço Siqueira',     cpf: '31108555268', email: 'lala-siqueira@hotmail.com' },
   { nome: 'Jorge Hipólito de Souza',          cpf: '65121171234', email: 'jorgehipolitodesouza@gmail.com' },
   { nome: 'Kátia Cristina do Rosário Lopes',  cpf: '00936298260', email: 'katia.cristina000@gmail.com' },
-  { nome: 'Odete de Souza Cunha',             cpf: '44365942204', email: 'odetecunha_5.cunha@hotmail.com' },
 ];
 
 @Injectable()
