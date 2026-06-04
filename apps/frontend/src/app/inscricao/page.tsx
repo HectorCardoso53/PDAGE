@@ -267,7 +267,7 @@ export default function InscricaoPage() {
   };
 
   const validateDocs = (): string => {
-    if (!form.docRg) return 'Envie o RG (frente e verso em um único PDF) — item a.';
+    if (!form.docRg) return 'Envie o RG ou CNH (item a).';
     if (!form.docCpf) return 'Envie o CPF (item b).';
     if (!form.docResidencia) return 'Envie o Comprovante de Residência (item c).';
     if (!form.docTituloEleitor) return 'Envie o Título de Eleitor (item d).';
@@ -403,7 +403,7 @@ export default function InscricaoPage() {
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Documentos enviados</p>
               <ul className="space-y-2">
                 {[
-                  { label: 'RG (frente e verso)', file: form.docRg },
+                  { label: 'RG ou CNH', file: form.docRg },
                   { label: 'CPF', file: form.docCpf },
                   { label: 'Comprovante de Residência', file: form.docResidencia },
                   { label: 'Título de Eleitor', file: form.docTituloEleitor },
@@ -894,8 +894,8 @@ export default function InscricaoPage() {
                   </div>
                 )}
 
-                {/* a — RG (frente e verso em único PDF) */}
-                <FileCard field="docRg" tag="a" label="RG (frente e verso)" hint="Inclua frente e verso em um único arquivo PDF" />
+                {/* a — RG ou CNH */}
+                <FileCard field="docRg" tag="a" label="RG ou CNH" hint="Para RG: inclua frente e verso em um único arquivo PDF" />
 
                 {/* b — CPF */}
                 <FileCard field="docCpf" tag="b" label="CPF" />
@@ -1045,7 +1045,7 @@ export default function InscricaoPage() {
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Documentos enviados</p>
                   <ul className="space-y-1.5">
                     {[
-                      { label: 'RG (frente e verso)', file: form.docRg },
+                      { label: 'RG ou CNH', file: form.docRg },
                       { label: 'CPF', file: form.docCpf },
                       { label: 'Comprovante de Residência', file: form.docResidencia },
                       { label: 'Título de Eleitor', file: form.docTituloEleitor },

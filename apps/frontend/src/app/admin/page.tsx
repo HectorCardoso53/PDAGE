@@ -10,7 +10,7 @@ import {
 import { apiFetch, API_BASE } from '@/lib/api';
 
 const DOC_FIELDS: { field: keyof AdminCandidato; label: string }[] = [
-  { field: 'docRg',            label: 'RG (frente e verso)' },
+  { field: 'docRg',            label: 'RG ou CNH' },
   { field: 'docCpf',           label: 'CPF' },
   { field: 'docResidencia',    label: 'Comprovante de Residência' },
   { field: 'docTituloEleitor', label: 'Título de Eleitor' },

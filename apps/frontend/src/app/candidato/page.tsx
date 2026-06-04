@@ -42,7 +42,7 @@ type Candidato = {
 };
 
 const DOCS_INFO: { field: keyof Candidato; label: string }[] = [
-  { field: 'docRg',            label: 'RG (frente e verso)' },
+  { field: 'docRg',            label: 'RG ou CNH' },
   { field: 'docCpf',           label: 'CPF' },
   { field: 'docResidencia',    label: 'Comprovante de Residência' },
   { field: 'docTituloEleitor', label: 'Título de Eleitor' },
