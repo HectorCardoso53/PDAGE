@@ -73,17 +73,24 @@ type AdminCandidato = {
 };
 
 const STATUS_CONFIG: Record<StatusEtapa, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
-  PENDENTE:   { label: 'Pendente',   color: 'text-gray-500',  bg: 'bg-gray-100',  border: 'border-gray-200',  icon: Clock },
-  EM_ANALISE: { label: 'Em análise', color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', icon: Clock },
-  APROVADO:   { label: 'Aprovado',   color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
-  REPROVADO:  { label: 'Reprovado',  color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
+  PENDENTE:   { label: 'Pendente',    color: 'text-gray-500',  bg: 'bg-gray-100',  border: 'border-gray-200',  icon: Clock },
+  EM_ANALISE: { label: 'Em análise',  color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', icon: Clock },
+  APROVADO:   { label: 'Habilitado',  color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
+  REPROVADO:  { label: 'Inabilitado', color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
 };
 
+function getStatusCfg(status: StatusEtapa, etapaTipo: string) {
+  const base = STATUS_CONFIG[status];
+  if (etapaTipo === 'INSCRICAO' && status === 'APROVADO')
+    return { ...base, label: 'Inscrito' };
+  return base;
+}
+
 const STATUS_OPTIONS: { value: StatusEtapa; label: string; color: string; bg: string; border: string }[] = [
-  { value: 'PENDENTE',   label: 'Pendente',   color: 'text-gray-600',  bg: 'bg-gray-100',  border: 'border-gray-300' },
-  { value: 'EM_ANALISE', label: 'Em análise', color: 'text-amber-700', bg: 'bg-amber-50',  border: 'border-amber-400' },
-  { value: 'APROVADO',   label: 'Aprovado',   color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-500' },
-  { value: 'REPROVADO',  label: 'Reprovado',  color: 'text-red-700',   bg: 'bg-red-50',    border: 'border-red-500' },
+  { value: 'PENDENTE',   label: 'Pendente',    color: 'text-gray-600',  bg: 'bg-gray-100',  border: 'border-gray-300' },
+  { value: 'EM_ANALISE', label: 'Em análise',  color: 'text-amber-700', bg: 'bg-amber-50',  border: 'border-amber-400' },
+  { value: 'APROVADO',   label: 'Habilitado',  color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-500' },
+  { value: 'REPROVADO',  label: 'Inabilitado', color: 'text-red-700',   bg: 'bg-red-50',    border: 'border-red-500' },
 ];
 
 const ETAPA_ICONS: Record<string, React.ElementType> = {
@@ -97,7 +104,7 @@ const ETAPA_ICONS: Record<string, React.ElementType> = {
 };
 
 const ETAPA_NOTES: Record<string, string> = {
-  INSCRICAO: 'Valide os dados cadastrais do candidato e aprove ou reprove a inscrição no processo seletivo.',
+  INSCRICAO: 'Valide os dados cadastrais do candidato e habilite ou inabilite a inscrição no processo seletivo.',
   HABILITACAO_DOCUMENTAL: 'Verifique os documentos enviados e confira se os dados abaixo correspondem ao cadastro.',
   AVALIACAO_COGNITIVA: 'Insira a pontuação obtida pelo candidato na avaliação cognitiva realizada externamente.',
   QUALIFICACAO_CURRICULAR: 'Avalie a formação acadêmica e o tempo de serviço do candidato.',
@@ -194,7 +201,7 @@ function getStageData(etapa: string, c: AdminCandidato, allEtapas: EtapaAdmin[])
         .filter(e => e.etapa !== 'RESULTADO_FINAL' && e.etapa !== 'CERTIFICACAO')
         .map(e => ({
           label: e.label,
-          value: STATUS_CONFIG[e.status].label + (e.pontuacao !== null ? ` — ${e.pontuacao} pts` : ''),
+          value: getStatusCfg(e.status, e.etapa).label + (e.pontuacao !== null ? ` — ${e.pontuacao} pts` : ''),
         }));
     default:
       return [];
@@ -490,7 +497,7 @@ export default function AdminPage() {
                 <div className="divide-y divide-gray-50">
                   {pendingRevisao.map(c => {
                     const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
-                    const cfg = STATUS_CONFIG[etapa?.status ?? 'PENDENTE'];
+                    const cfg = getStatusCfg(etapa?.status ?? 'PENDENTE', 'INSCRICAO');
                     return (
                       <div key={c.id} className="px-6 py-4 flex items-center gap-4">
                         <div className="flex-1 min-w-0">
@@ -531,7 +538,7 @@ export default function AdminPage() {
                 <div className="divide-y divide-gray-50">
                   {revisados.map(c => {
                     const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
-                    const cfg = STATUS_CONFIG[etapa?.status ?? 'PENDENTE'];
+                    const cfg = getStatusCfg(etapa?.status ?? 'PENDENTE', 'INSCRICAO');
                     return (
                       <div key={c.id} className="px-6 py-4 flex items-center gap-4">
                         <div className="flex-1 min-w-0">
@@ -821,7 +828,7 @@ export default function AdminPage() {
                 const isLocked = etapa.etapa === 'INSCRICAO' ? false
                   : etapa.etapa === 'HABILITACAO_DOCUMENTAL' ? !inscricaoAprovada
                   : true;
-                const cfg = STATUS_CONFIG[etapa.status];
+                const cfg = getStatusCfg(etapa.status, etapa.etapa);
                 const StatusIcon = cfg.icon;
                 const isEditing = editingEtapa === etapa.etapa;
                 const stageData = getStageData(etapa.etapa, selected, selected.etapas);
