@@ -51,6 +51,12 @@ export class AdminController {
     return this.adminService.resetSenhaMembro(id, body.novaSenha);
   }
 
+  @Patch('membros/:id/permissao')
+  updatePermissao(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    return this.adminService.updatePermissao(id, body.permissao);
+  }
+
   @Delete('membros/:id')
   deleteMembro(@Param('id') id: string, @Req() req: any) {
     if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');

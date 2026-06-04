@@ -230,13 +230,13 @@ export default function AdminPage() {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [docChecks, setDocChecks] = useState<Record<string, boolean | null>>({});
-  const [currentUser, setCurrentUser] = useState<{ role: string; nome: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ role: string; nome: string; permissao?: string } | null>(null);
   const [showAuditoria, setShowAuditoria] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [showMembros, setShowMembros] = useState(false);
   const [membros, setMembros] = useState<any[]>([]);
   const [showNovoMembro, setShowNovoMembro] = useState(false);
-  const [novoMembroForm, setNovoMembroForm] = useState({ nome: '', cpf: '', email: '', senha: '' });
+  const [novoMembroForm, setNovoMembroForm] = useState({ nome: '', cpf: '', email: '', senha: '', permissao: 'AVALIADOR' });
   const [novoMembroError, setNovoMembroError] = useState('');
   const [novoMembroSaving, setNovoMembroSaving] = useState(false);
   const [resetSenhaId, setResetSenhaId] = useState<string | null>(null);
@@ -464,7 +464,7 @@ export default function AdminPage() {
       if (!res.ok) { setNovoMembroError(data.message ?? 'Erro ao criar membro.'); return; }
       setMembros(prev => [...prev, data]);
       setShowNovoMembro(false);
-      setNovoMembroForm({ nome: '', cpf: '', email: '', senha: '' });
+      setNovoMembroForm({ nome: '', cpf: '', email: '', senha: '', permissao: 'AVALIADOR' });
     } catch { setNovoMembroError('Erro de conexão.'); }
     finally { setNovoMembroSaving(false); }
   };
@@ -502,6 +502,18 @@ export default function AdminPage() {
         body: JSON.stringify({ novaSenha }),
       });
       if (res.ok) { setResetSenhaId(null); setNovaSenha(''); alert('Senha redefinida com sucesso.'); }
+    } catch {}
+  };
+
+  const handleUpdatePermissao = async (id: string, permissao: string) => {
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const res = await apiFetch(`/api/admin/membros/${id}/permissao`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ permissao }),
+      });
+      if (res.ok) { const updated = await res.json(); setMembros(prev => prev.map(m => m.id === id ? updated : m)); }
     } catch {}
   };
 
@@ -547,9 +559,15 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-2">
             {currentUser && (
-              <span className="hidden sm:block text-xs text-white/50 max-w-[200px] truncate">
-                {currentUser.nome}
-              </span>
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-xs text-white/70 max-w-[200px] truncate">{currentUser.nome}</span>
+                {currentUser.permissao === 'VISUALIZADOR' && (
+                  <span className="text-[10px] text-purple-300 font-semibold">Visualizador</span>
+                )}
+                {currentUser.permissao === 'AVALIADOR' && (
+                  <span className="text-[10px] text-blue-300 font-semibold">Avaliador</span>
+                )}
+              </div>
             )}
             {currentUser?.role === 'admin' && (
               <>
@@ -636,6 +654,23 @@ export default function AdminPage() {
                       onChange={e => setNovoMembroForm(f => ({ ...f, senha: e.target.value }))}
                     />
                   </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-gray-500 mb-1">Permissão *</label>
+                    <div className="flex gap-3">
+                      {[
+                        { val: 'AVALIADOR',    label: 'Avaliador',    desc: 'Pode revisar e editar etapas dos candidatos' },
+                        { val: 'VISUALIZADOR', label: 'Visualizador', desc: 'Apenas visualiza dados, sem poder editar' },
+                      ].map(opt => (
+                        <label key={opt.val} className={`flex-1 flex items-start gap-2 p-3 rounded-lg border-2 cursor-pointer transition-colors ${novoMembroForm.permissao === opt.val ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-200'}`}>
+                          <input type="radio" name="novaPermissao" className="mt-0.5 accent-blue-500" checked={novoMembroForm.permissao === opt.val} onChange={() => setNovoMembroForm(f => ({ ...f, permissao: opt.val }))} />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700">{opt.label}</p>
+                            <p className="text-xs text-gray-400">{opt.desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 {novoMembroError && (
                   <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{novoMembroError}</p>
@@ -666,7 +701,20 @@ export default function AdminPage() {
                           <p className="text-xs text-gray-500 font-mono mt-0.5">CPF: {m.cpf}</p>
                           <p className="text-xs text-gray-400 truncate">{m.email}</p>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                          {/* Seletor de permissão */}
+                          <select
+                            value={m.permissao ?? 'AVALIADOR'}
+                            onChange={e => handleUpdatePermissao(m.id, e.target.value)}
+                            className={`text-xs font-semibold px-2 py-1 rounded-lg border cursor-pointer focus:outline-none ${
+                              m.permissao === 'VISUALIZADOR'
+                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                            }`}
+                            title="Alterar permissão">
+                            <option value="AVALIADOR">Avaliador</option>
+                            <option value="VISUALIZADOR">Visualizador</option>
+                          </select>
                           {/* Toggle ativo/inativo */}
                           <button
                             onClick={() => handleToggleMembro(m.id)}
@@ -1047,7 +1095,7 @@ export default function AdminPage() {
               })()}
 
               {/* Ações */}
-              {reviewAction === null && (
+              {reviewAction === null && currentUser?.permissao !== 'VISUALIZADOR' && (
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setReviewAction('approve')}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
@@ -1189,7 +1237,7 @@ export default function AdminPage() {
                             <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                               <StatusIcon className="w-3 h-3" /> {cfg.label}
                             </span>
-                            {etapa.id && (
+                            {etapa.id && currentUser?.permissao !== 'VISUALIZADOR' && (
                               <button
                                 onClick={() => isEditing ? setEditingEtapa(null) : startEdit(etapa)}
                                 className="px-3 py-1 rounded-lg text-xs font-semibold border transition-colors"

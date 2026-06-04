@@ -63,7 +63,7 @@ export class AuthService {
     const senhaOk = await bcrypt.compare(dto.senha, membro.senhaHash);
     if (!senhaOk) throw new UnauthorizedException('Credenciais inválidas.');
 
-    const payload = { sub: membro.id, role: 'comissao', nome: membro.nome, cpf: membro.cpf };
+    const payload = { sub: membro.id, role: 'comissao', nome: membro.nome, cpf: membro.cpf, permissao: membro.permissao };
     return { access_token: this.jwt.sign(payload) };
   }
 }

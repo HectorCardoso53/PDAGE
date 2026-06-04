@@ -53,6 +53,7 @@ model MembroComissao {
   email     String     @unique
   senhaHash String
   ativo     Boolean    @default(true)
+  permissao String     @default("AVALIADOR")
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   logs      AuditLog[]
