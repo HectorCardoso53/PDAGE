@@ -63,6 +63,12 @@ export class AdminController {
     return this.adminService.deleteMembro(id);
   }
 
+  @Post('notificar-sem-documentos')
+  notificarSemDocumentos(@Req() req: any) {
+    if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
+    return this.adminService.notificarSemDocumentos();
+  }
+
   private isMasterOrAdmin(user: any): boolean {
     return user?.role === 'admin' || (user?.role === 'comissao' && user?.permissao === 'MASTER');
   }

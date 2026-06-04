@@ -20,6 +20,68 @@ export class MailService {
     });
   }
 
+  async enviarNotificacaoDocumentos(params: { nome: string; email: string }) {
+    const { nome, email } = params;
+    const primeiroNome = nome.split(' ')[0];
+    const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:#001b3d;padding:32px 40px;border-bottom:4px solid #ffd21f;">
+            <p style="margin:0;color:#ffd21f;font-size:22px;font-weight:bold;letter-spacing:1px;">MERITUS</p>
+            <p style="margin:4px 0 0;color:#ffffff;font-size:12px;opacity:0.7;">Gestores Escolares — Prefeitura Municipal de Oriximiná/PA</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px;">
+            <h2 style="margin:0 0 8px;color:#001b3d;font-size:20px;">Atualização de Documentos Necessária</h2>
+            <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 24px;">
+              Olá, <strong>${primeiroNome}</strong>!<br/>
+              Identificamos que os documentos da sua inscrição no <strong>Processo Seletivo de Gestores Escolares</strong> precisam ser reenviados.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffbeb;border:1px solid #fbbf24;border-radius:10px;margin-bottom:28px;">
+              <tr><td style="padding:18px 20px;">
+                <p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#92400e;">⚠️ Ação necessária</p>
+                <p style="margin:0;font-size:14px;color:#78350f;line-height:1.6;">
+                  Por favor, acesse sua <strong>Área do Candidato</strong> e reenvie seus documentos o quanto antes para não perder o prazo de habilitação.
+                </p>
+              </td></tr>
+            </table>
+            <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">
+              Para reenviar, faça login na plataforma Meritus e clique em <strong>"Reenviar documentos"</strong> na sua área do candidato.
+            </p>
+            <p style="color:#9ca3af;font-size:12px;margin:0;">Em caso de dúvidas, entre em contato com a Secretaria Municipal de Educação — SEMED.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">
+            <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;">Secretaria Municipal de Educação — SEMED · Oriximiná/PA</p>
+            <p style="margin:0;font-size:11px;color:#d1d5db;">Este é um e-mail automático. Não responda a esta mensagem.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+    try {
+      await this.transporter.sendMail({
+        from: `"Meritus — SEMED Oriximiná" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: `⚠️ Ação necessária: reenvie seus documentos — Meritus`,
+        html,
+      });
+      this.logger.log(`E-mail de notificação de docs enviado para ${email}`);
+    } catch (err: any) {
+      this.logger.error(`Falha ao notificar ${email}: ${err?.message}`);
+    }
+  }
+
   async enviarConfirmacaoInscricao(params: {
     nome: string;
     email: string;
@@ -117,7 +179,7 @@ export class MailService {
         html,
       });
       this.logger.log(`E-mail de confirmação enviado para ${email}`);
-    } catch (err) {
+    } catch (err: any) {
       this.logger.error(`Falha ao enviar e-mail para ${email}: ${err.message}`);
     }
   }

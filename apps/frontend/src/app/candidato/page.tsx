@@ -103,6 +103,11 @@ export default function CandidatoPage() {
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
+  const [docModal, setDocModal] = useState(false);
+  const [docFiles, setDocFiles] = useState<Record<string, File | null>>({});
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadError, setDocUploadError] = useState('');
+  const [docUploadOk, setDocUploadOk] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('meritus_token');
@@ -153,6 +158,35 @@ export default function CandidatoPage() {
       setEditError('Erro de conexão.');
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  const handleUploadDocs = async () => {
+    const hasFile = Object.values(docFiles).some(f => f !== null);
+    if (!hasFile) { setDocUploadError('Selecione pelo menos um arquivo.'); return; }
+    setDocUploading(true);
+    setDocUploadError('');
+    const token = localStorage.getItem('meritus_token');
+    const form = new FormData();
+    for (const [field, file] of Object.entries(docFiles)) {
+      if (file) form.append(field, file);
+    }
+    try {
+      const res = await apiFetch('/api/candidato/docs', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      if (!res.ok) { setDocUploadError('Erro ao enviar. Tente novamente.'); return; }
+      const updated = await res.json();
+      setData(prev => prev ? { ...prev, candidato: { ...prev.candidato, ...updated } } : null);
+      setDocFiles({});
+      setDocModal(false);
+      setDocUploadOk(true);
+    } catch {
+      setDocUploadError('Erro de conexão.');
+    } finally {
+      setDocUploading(false);
     }
   };
 
@@ -264,6 +298,41 @@ export default function CandidatoPage() {
             )}
           </div>
         </div>
+
+        {/* Banner: documentos faltando */}
+        {(() => {
+          const faltando = DOCS_INFO.filter(({ field }) => !candidato[field]);
+          if (faltando.length === 0 || docUploadOk) return null;
+          return (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex gap-4 shadow-sm">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-amber-100">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-amber-800 mb-1">Documentos pendentes de envio</p>
+                <p className="text-sm text-amber-700 leading-relaxed mb-3">
+                  {faltando.length} documento{faltando.length > 1 ? 's precisam' : ' precisa'} ser {faltando.length > 1 ? 'enviados' : 'enviado'} para concluir sua habilitação: <span className="font-semibold">{faltando.map(d => d.label).join(', ')}</span>.
+                </p>
+                <button
+                  onClick={() => { setDocModal(true); setDocUploadError(''); }}
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-white"
+                  style={{ background: '#001b3d' }}>
+                  Reenviar documentos
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Banner: docs enviados com sucesso */}
+        {docUploadOk && (
+          <div className="rounded-2xl border border-green-200 bg-green-50 p-4 flex items-center gap-3 shadow-sm">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <p className="text-sm font-semibold text-green-700">Documentos enviados com sucesso! Aguardando análise da comissão.</p>
+          </div>
+        )}
 
         {/* Banner: aguardando comissão */}
         {allPending && (
@@ -634,6 +703,65 @@ export default function CandidatoPage() {
                 className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity"
                 style={{ background: '#001b3d' }}>
                 {editSaving ? 'Salvando…' : 'Salvar alterações'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de reenvio de documentos */}
+      {docModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={e => { if (e.target === e.currentTarget) setDocModal(false); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+              <div>
+                <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Reenviar Documentos</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Selecione os PDFs que deseja enviar. Máximo 20 MB por arquivo.</p>
+              </div>
+              <button onClick={() => setDocModal(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-3">
+              {DOCS_INFO.map(({ field, label }) => {
+                const jaEnviado = !!candidato[field];
+                const novoArquivo = docFiles[field] ?? null;
+                return (
+                  <div key={field} className={`rounded-xl border px-4 py-3 ${jaEnviado && !novoArquivo ? 'border-green-200 bg-green-50' : novoArquivo ? 'border-blue-200 bg-blue-50' : 'border-amber-200 bg-amber-50'}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className={`w-4 h-4 flex-shrink-0 ${jaEnviado && !novoArquivo ? 'text-green-600' : novoArquivo ? 'text-blue-600' : 'text-amber-600'}`} />
+                        <span className="text-sm font-medium text-gray-700 truncate">{label}</span>
+                        {jaEnviado && !novoArquivo && <span className="text-xs text-green-600 font-semibold flex-shrink-0">✓ enviado</span>}
+                        {novoArquivo && <span className="text-xs text-blue-600 font-semibold flex-shrink-0 truncate max-w-[100px]">{novoArquivo.name}</span>}
+                      </div>
+                      <label className="flex-shrink-0 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors">
+                        {novoArquivo ? 'Trocar' : jaEnviado ? 'Substituir' : 'Selecionar'}
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          className="hidden"
+                          onChange={e => setDocFiles(f => ({ ...f, [field]: e.target.files?.[0] ?? null }))}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+              {docUploadError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{docUploadError}</p>
+              )}
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex gap-3 rounded-b-2xl">
+              <button onClick={() => setDocModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleUploadDocs} disabled={docUploading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
+                style={{ background: '#001b3d' }}>
+                {docUploading ? 'Enviando…' : 'Enviar documentos'}
               </button>
             </div>
           </div>

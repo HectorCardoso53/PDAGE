@@ -40,6 +40,27 @@ export class CandidatoService {
     });
   }
 
+  async updateDocs(candidatoId: string, files: Record<string, any[]>) {
+    const DOC_FIELDS = [
+      'docRg', 'docCpf', 'docResidencia', 'docTituloEleitor',
+      'docQuitacao', 'docReservista', 'docDiploma', 'docPosGraduacao', 'docLotacao',
+    ];
+    const data: Record<string, string> = {};
+    for (const field of DOC_FIELDS) {
+      const file = files[field]?.[0];
+      if (file) data[field] = file.filename;
+    }
+    if (Object.keys(data).length === 0) throw new BadRequestException('Nenhum arquivo enviado.');
+    return this.prisma.candidato.update({
+      where: { id: candidatoId },
+      data,
+      select: {
+        docRg: true, docCpf: true, docResidencia: true, docTituloEleitor: true,
+        docQuitacao: true, docReservista: true, docDiploma: true, docPosGraduacao: true, docLotacao: true,
+      },
+    });
+  }
+
   async updateMe(candidatoId: string, body: Record<string, string>) {
     const allowed = [
       'nome','rg','orgaoEmissor','telefone','email',

@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException, ConflictException, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { UpdateEtapaDto } from './dto/update-etapa.dto';
 
 const ETAPA_ORDER = [
@@ -34,7 +37,7 @@ const MEMBROS_COMISSAO = [
 
 @Injectable()
 export class AdminService implements OnModuleInit {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private mail: MailService) {}
 
   async onModuleInit() {
     try {
@@ -253,5 +256,37 @@ export class AdminService implements OnModuleInit {
     const senhaHash = await bcrypt.hash(novaSenha, 10);
     await this.prisma.membroComissao.update({ where: { id }, data: { senhaHash } });
     return { ok: true };
+  }
+
+  async notificarSemDocumentos() {
+    const DOC_FIELDS = [
+      'docRg', 'docCpf', 'docResidencia', 'docTituloEleitor',
+      'docQuitacao', 'docReservista', 'docDiploma', 'docPosGraduacao', 'docLotacao',
+    ] as const;
+
+    const candidatos = await this.prisma.candidato.findMany({
+      where: { inscricoes: { some: {} } },
+      select: {
+        nome: true, email: true,
+        docRg: true, docCpf: true, docResidencia: true, docTituloEleitor: true,
+        docQuitacao: true, docReservista: true, docDiploma: true,
+        docPosGraduacao: true, docLotacao: true,
+      },
+    });
+
+    const semDocs = candidatos.filter(c =>
+      DOC_FIELDS.some(f => {
+        const val = c[f];
+        if (!val) return true;
+        return !existsSync(join(process.cwd(), 'uploads', val));
+      })
+    );
+
+    let notificados = 0;
+    for (const c of semDocs) {
+      await this.mail.enviarNotificacaoDocumentos({ nome: c.nome, email: c.email });
+      notificados++;
+    }
+    return { notificados };
   }
 }

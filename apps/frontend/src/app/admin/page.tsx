@@ -505,6 +505,21 @@ export default function AdminPage() {
     } catch {}
   };
 
+  const handleNotificarSemDocs = async () => {
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const res = await apiFetch('/api/admin/notificar-sem-documentos', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      const data = await res.json();
+      if (res.ok) alert(`${data.notificados} candidato(s) notificado(s) por e-mail.`);
+      else alert('Erro ao enviar notificações.');
+    } catch {
+      alert('Erro de conexão.');
+    }
+  };
+
   const handleUpdatePermissao = async (id: string, permissao: string) => {
     const t = localStorage.getItem('meritus_admin_token');
     try {
@@ -578,6 +593,11 @@ export default function AdminPage() {
                 <button onClick={() => { setShowAuditoria(true); loadAuditLogs(); }}
                   className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
                   Auditoria
+                </button>
+                <button onClick={handleNotificarSemDocs}
+                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-300 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Enviar e-mail para candidatos com documentos faltando">
+                  Notificar
                 </button>
               </>
             )}
