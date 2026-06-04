@@ -20,9 +20,12 @@ export class MailService {
     });
   }
 
-  async enviarNotificacaoDocumentos(params: { nome: string; email: string }) {
-    const { nome, email } = params;
+  async enviarNotificacaoDocumentos(params: { nome: string; email: string; docsLabel: string[] }) {
+    const { nome, email, docsLabel } = params;
     const primeiroNome = nome.split(' ')[0];
+    const listaHtml = docsLabel.map(d =>
+      `<li style="margin-bottom:6px;font-size:14px;color:#78350f;">📄 ${d}</li>`
+    ).join('');
     const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -42,14 +45,14 @@ export class MailService {
             <h2 style="margin:0 0 8px;color:#001b3d;font-size:20px;">Atualização de Documentos Necessária</h2>
             <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 24px;">
               Olá, <strong>${primeiroNome}</strong>!<br/>
-              Identificamos que os documentos da sua inscrição no <strong>Processo Seletivo de Gestores Escolares</strong> precisam ser reenviados.
+              Identificamos que ${docsLabel.length === 1 ? 'um documento da sua inscrição precisa' : `${docsLabel.length} documentos da sua inscrição precisam`} ser ${docsLabel.length === 1 ? 'reenviado' : 'reenviados'} no <strong>Processo Seletivo de Gestores Escolares</strong>.
             </p>
             <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffbeb;border:1px solid #fbbf24;border-radius:10px;margin-bottom:28px;">
               <tr><td style="padding:18px 20px;">
-                <p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#92400e;">⚠️ Ação necessária</p>
-                <p style="margin:0;font-size:14px;color:#78350f;line-height:1.6;">
-                  Por favor, acesse sua <strong>Área do Candidato</strong> e reenvie seus documentos o quanto antes para não perder o prazo de habilitação.
-                </p>
+                <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#92400e;">⚠️ Documento${docsLabel.length > 1 ? 's' : ''} pendente${docsLabel.length > 1 ? 's' : ''}:</p>
+                <ul style="margin:0;padding-left:18px;">
+                  ${listaHtml}
+                </ul>
               </td></tr>
             </table>
             <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">

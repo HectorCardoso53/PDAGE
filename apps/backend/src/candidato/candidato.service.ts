@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { EtapaTipo } from '@prisma/client';
 
@@ -106,6 +108,19 @@ export class CandidatoService {
       };
     });
 
+    const DOC_FIELDS_LIST = [
+      'docRg', 'docCpf', 'docResidencia', 'docTituloEleitor',
+      'docQuitacao', 'docReservista', 'docDiploma', 'docPosGraduacao', 'docLotacao',
+    ] as const;
+
+    const docsComProblema: string[] = [];
+    for (const field of DOC_FIELDS_LIST) {
+      const filename = (candidato as Record<string, any>)[field];
+      if (filename && !existsSync(join(process.cwd(), 'uploads', filename))) {
+        docsComProblema.push(field);
+      }
+    }
+
     return {
       candidato: {
         id: candidato.id,
@@ -149,6 +164,7 @@ export class CandidatoService {
           }
         : null,
       etapas,
+      docsComProblema,
     };
   }
 }

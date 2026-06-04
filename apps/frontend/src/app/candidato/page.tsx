@@ -53,7 +53,7 @@ const DOCS_INFO: { field: keyof Candidato; label: string }[] = [
   { field: 'docLotacao',       label: 'Comprovante de Lotação' },
 ];
 
-type DashData = { candidato: Candidato; inscricao: Inscricao | null; etapas: Etapa[] };
+type DashData = { candidato: Candidato; inscricao: Inscricao | null; etapas: Etapa[]; docsComProblema?: string[] };
 
 const ETAPA_CRONOGRAMA: Record<string, { label: string; data: string }[]> = {
   INSCRICAO: [
@@ -301,7 +301,8 @@ export default function CandidatoPage() {
 
         {/* Banner: documentos faltando */}
         {(() => {
-          const faltando = DOCS_INFO.filter(({ field }) => !candidato[field]);
+          const problema = data.docsComProblema ?? [];
+          const faltando = DOCS_INFO.filter(({ field }) => !candidato[field] || problema.includes(field as string));
           if (faltando.length === 0 || docUploadOk) return null;
           return (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex gap-4 shadow-sm">

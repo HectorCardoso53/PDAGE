@@ -264,6 +264,18 @@ export class AdminService implements OnModuleInit {
       'docQuitacao', 'docReservista', 'docDiploma', 'docPosGraduacao', 'docLotacao',
     ] as const;
 
+    const DOC_LABELS: Record<string, string> = {
+      docRg:            'RG ou CNH',
+      docCpf:           'CPF',
+      docResidencia:    'Comprovante de Residência',
+      docTituloEleitor: 'Título de Eleitor',
+      docQuitacao:      'Quitação Eleitoral',
+      docReservista:    'Carteira de Reservista',
+      docDiploma:       'Diploma',
+      docPosGraduacao:  'Certificado de Pós-graduação',
+      docLotacao:       'Comprovante de Lotação',
+    };
+
     const candidatos = await this.prisma.candidato.findMany({
       where: { inscricoes: { some: {} } },
       select: {
@@ -274,17 +286,16 @@ export class AdminService implements OnModuleInit {
       },
     });
 
-    const semDocs = candidatos.filter(c =>
-      DOC_FIELDS.some(f => {
+    let notificados = 0;
+    for (const c of candidatos) {
+      const docsFaltando = DOC_FIELDS.filter(f => {
         const val = c[f];
         if (!val) return true;
         return !existsSync(join(process.cwd(), 'uploads', val));
-      })
-    );
-
-    let notificados = 0;
-    for (const c of semDocs) {
-      await this.mail.enviarNotificacaoDocumentos({ nome: c.nome, email: c.email });
+      });
+      if (docsFaltando.length === 0) continue;
+      const docsLabel = docsFaltando.map(f => DOC_LABELS[f] ?? f);
+      await this.mail.enviarNotificacaoDocumentos({ nome: c.nome, email: c.email, docsLabel });
       notificados++;
     }
     return { notificados };
