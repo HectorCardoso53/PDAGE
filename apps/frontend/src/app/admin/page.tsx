@@ -973,22 +973,6 @@ export default function AdminPage() {
                             </div>
                           </div>
 
-                          {/* Pontuação — não aplicável na validação de inscrição */}
-                          {etapa.etapa !== 'INSCRICAO' && (
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="text-xs text-gray-500 mb-1 block">
-                                  Pontuação <span className="text-gray-400">(opcional)</span>
-                                </label>
-                                <input type="number" min={0} max={100}
-                                  value={editForm.pontuacao}
-                                  onChange={e => setEditForm(f => ({ ...f, pontuacao: e.target.value }))}
-                                  placeholder="ex: 75"
-                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                              </div>
-                            </div>
-                          )}
-
                           {/* Observação */}
                           <div>
                             <label className="text-xs text-gray-500 mb-1 block">
