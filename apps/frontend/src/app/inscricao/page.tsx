@@ -211,6 +211,7 @@ export default function InscricaoPage() {
   const [showSenha, setShowSenha] = useState(false);
   const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
   const [showResume, setShowResume] = useState(false);
+  const [bairroOtro, setBairroOtro] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<{ form: FormDraft; step: number } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const renameInputRef = useRef<Map<string, HTMLInputElement | null>>(new Map());
@@ -735,7 +736,35 @@ export default function InscricaoPage() {
                   <div className={`${fieldsetClass} mt-4`}>
                     <div>
                       <label className={labelClass}>Bairro *</label>
-                      <input required className={inputClass} value={form.bairro} onChange={e => set('bairro', e.target.value)} />
+                      <select
+                        required={!bairroOtro}
+                        className={inputClass}
+                        value={bairroOtro ? 'Outro' : form.bairro}
+                        onChange={e => {
+                          if (e.target.value === 'Outro') {
+                            setBairroOtro(true);
+                            set('bairro', '');
+                          } else {
+                            setBairroOtro(false);
+                            set('bairro', e.target.value);
+                          }
+                        }}
+                      >
+                        <option value="">Selecione...</option>
+                        {['CENTRO','NOSSA SENHORA DE FÁTIMA','SANTA LUZIA','SÃO PEDRO','NOSSA SENHORA DAS GRAÇAS','PENTA','PENTA 2','NOVO HORIZONTE','BELA VISTA','SÃO LÁZARO','JESUS MISERICORDIOSO','SANTÍSSIMO SACRAMENTO','ÁREA PASTORAL','SÃO FRANCISCO','PARAISÓPOLIS','PERPÉTUO SOCORRO','CIDADE NOVA','SÃO JOSÉ OPERÁRIO','SÃO JOSÉ OPERÁRIO 2'].map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                        <option value="Outro">Outro</option>
+                      </select>
+                      {bairroOtro && (
+                        <input
+                          required
+                          className={inputClass + ' mt-2'}
+                          placeholder="Digite o nome do bairro"
+                          value={form.bairro}
+                          onChange={e => set('bairro', e.target.value)}
+                        />
+                      )}
                     </div>
                     <div>
                       <label className={labelClass}>Cidade *</label>
@@ -802,7 +831,7 @@ export default function InscricaoPage() {
                     className={inputClass}
                     value={form.escola}
                     onChange={e => { set('escola', e.target.value); }}
-                    onFocus={e => { if (!form.escola) set('escola', ''); }}
+                    onFocus={() => { if (!form.escola) set('escola', ''); }}
                     placeholder="Digite para buscar a escola..."
                   />
                   {(() => {
