@@ -211,7 +211,6 @@ export default function InscricaoPage() {
   const [showSenha, setShowSenha] = useState(false);
   const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
   const [showResume, setShowResume] = useState(false);
-  const [bairroOtro, setBairroOtro] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<{ form: FormDraft; step: number } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const renameInputRef = useRef<Map<string, HTMLInputElement | null>>(new Map());
@@ -734,37 +733,37 @@ export default function InscricaoPage() {
                     <input required className={inputClass} value={form.logradouro} onChange={e => set('logradouro', e.target.value)} placeholder="Rua, Avenida..." />
                   </div>
                   <div className={`${fieldsetClass} mt-4`}>
-                    <div>
+                    <div className="relative">
                       <label className={labelClass}>Bairro *</label>
-                      <select
-                        required={!bairroOtro}
+                      <input
+                        required
+                        autoComplete="off"
                         className={inputClass}
-                        value={bairroOtro ? 'Outro' : form.bairro}
-                        onChange={e => {
-                          if (e.target.value === 'Outro') {
-                            setBairroOtro(true);
-                            set('bairro', '');
-                          } else {
-                            setBairroOtro(false);
-                            set('bairro', e.target.value);
-                          }
-                        }}
-                      >
-                        <option value="">Selecione...</option>
-                        {['CENTRO','NOSSA SENHORA DE FÁTIMA','SANTA LUZIA','SÃO PEDRO','NOSSA SENHORA DAS GRAÇAS','PENTA','PENTA 2','NOVO HORIZONTE','BELA VISTA','SÃO LÁZARO','JESUS MISERICORDIOSO','SANTÍSSIMO SACRAMENTO','ÁREA PASTORAL','SÃO FRANCISCO','PARAISÓPOLIS','PERPÉTUO SOCORRO','CIDADE NOVA','SÃO JOSÉ OPERÁRIO','SÃO JOSÉ OPERÁRIO 2'].map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                        <option value="Outro">Outro</option>
-                      </select>
-                      {bairroOtro && (
-                        <input
-                          required
-                          className={inputClass + ' mt-2'}
-                          placeholder="Digite o nome do bairro"
-                          value={form.bairro}
-                          onChange={e => set('bairro', e.target.value)}
-                        />
-                      )}
+                        value={form.bairro}
+                        onChange={e => set('bairro', e.target.value)}
+                        placeholder="Digite para buscar o bairro..."
+                      />
+                      {(() => {
+                        const BAIRROS = ['CENTRO','NOSSA SENHORA DE FÁTIMA','SANTA LUZIA','SÃO PEDRO','NOSSA SENHORA DAS GRAÇAS','PENTA','PENTA 2','NOVO HORIZONTE','BELA VISTA','SÃO LÁZARO','JESUS MISERICORDIOSO','SANTÍSSIMO SACRAMENTO','ÁREA PASTORAL','SÃO FRANCISCO','PARAISÓPOLIS','PERPÉTUO SOCORRO','CIDADE NOVA','SÃO JOSÉ OPERÁRIO','SÃO JOSÉ OPERÁRIO 2'];
+                        const q = form.bairro.trim().toLowerCase();
+                        const matches = q.length >= 1
+                          ? BAIRROS.filter(b => b.toLowerCase().includes(q) && b !== form.bairro.toUpperCase())
+                          : [];
+                        if (!matches.length) return null;
+                        return (
+                          <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto text-sm">
+                            {matches.map(b => (
+                              <li
+                                key={b}
+                                onMouseDown={e => { e.preventDefault(); set('bairro', b); }}
+                                className="px-4 py-2.5 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-0 font-medium text-gray-800"
+                              >
+                                {b}
+                              </li>
+                            ))}
+                          </ul>
+                        );
+                      })()}
                     </div>
                     <div>
                       <label className={labelClass}>Cidade *</label>
