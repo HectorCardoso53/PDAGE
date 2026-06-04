@@ -36,14 +36,13 @@ type Candidato = {
   vinculo: string | null; cargo: string; escola: string;
   matricula: string | null; municipio: string;
   tempoServico: string | null; formacao: string | null; especializacao: string | null;
-  docRgFrente: string | null; docRgVerso: string | null; docCpf: string | null; docResidencia: string | null;
+  docRg: string | null; docCpf: string | null; docResidencia: string | null;
   docTituloEleitor: string | null; docQuitacao: string | null; docReservista: string | null;
   docDiploma: string | null; docPosGraduacao: string | null; docLotacao: string | null;
 };
 
 const DOCS_INFO: { field: keyof Candidato; label: string }[] = [
-  { field: 'docRgFrente',      label: 'RG — Frente' },
-  { field: 'docRgVerso',       label: 'RG — Verso' },
+  { field: 'docRg',            label: 'RG (frente e verso)' },
   { field: 'docCpf',           label: 'CPF' },
   { field: 'docResidencia',    label: 'Comprovante de Residência' },
   { field: 'docTituloEleitor', label: 'Título de Eleitor' },

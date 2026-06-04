@@ -143,8 +143,7 @@ type FormState = {
   vinculo: string; matricula: string; cargo: string; escola: string; municipio: string;
   tempoServico: string; formacao: string; especializacao: string;
   declaracaoDados: boolean;
-  docRgFrente: File | null;
-  docRgVerso: File | null;
+  docRg: File | null;
   docCpf: File | null;
   docResidencia: File | null;
   docTituloEleitor: File | null;
@@ -160,7 +159,7 @@ type FormState = {
 const DRAFT_KEY = 'pdage_inscricao_draft';
 
 type FormDraft = Omit<FormState,
-  'docRgFrente'|'docRgVerso'|'docCpf'|'docResidencia'|'docTituloEleitor'|'docQuitacao'|
+  'docRg'|'docCpf'|'docResidencia'|'docTituloEleitor'|'docQuitacao'|
   'docReservista'|'docDiplomaPedagogia'|'docDiplomaOutras'|'docPosGraduacao'|'docLotacao'|
   'confirmarSenha'
 >;
@@ -193,7 +192,7 @@ const INITIAL_FORM: FormState = {
   telefone: '', email: '', senha: '', confirmarSenha: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '',
   vinculo: '', matricula: '', cargo: '', escola: '', municipio: 'Oriximiná',
   tempoServico: '', formacao: '', especializacao: '',
-  docRgFrente: null, docRgVerso: null, docCpf: null, docResidencia: null,
+  docRg: null, docCpf: null, docResidencia: null,
   docTituloEleitor: null, docQuitacao: null, docReservista: null,
   diplomaTipo: '', docDiplomaPedagogia: null, docDiplomaOutras: null,
   docPosGraduacao: null, docLotacao: null,
@@ -268,8 +267,7 @@ export default function InscricaoPage() {
   };
 
   const validateDocs = (): string => {
-    if (!form.docRgFrente) return 'Envie a Frente do RG (item a).';
-    if (!form.docRgVerso) return 'Envie o Verso do RG (item a).';
+    if (!form.docRg) return 'Envie o RG (frente e verso em um único PDF) — item a.';
     if (!form.docCpf) return 'Envie o CPF (item b).';
     if (!form.docResidencia) return 'Envie o Comprovante de Residência (item c).';
     if (!form.docTituloEleitor) return 'Envie o Título de Eleitor (item d).';
@@ -337,8 +335,7 @@ export default function InscricaoPage() {
       fd.append('especializacao', form.especializacao);
 
       // Arquivos
-      if (form.docRgFrente)     fd.append('docRgFrente',      form.docRgFrente);
-      if (form.docRgVerso)      fd.append('docRgVerso',       form.docRgVerso);
+      if (form.docRg)           fd.append('docRg',            form.docRg);
       if (form.docCpf)          fd.append('docCpf',           form.docCpf);
       if (form.docResidencia)   fd.append('docResidencia',    form.docResidencia);
       if (form.docTituloEleitor) fd.append('docTituloEleitor', form.docTituloEleitor);
@@ -406,8 +403,7 @@ export default function InscricaoPage() {
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Documentos enviados</p>
               <ul className="space-y-2">
                 {[
-                  { label: 'RG — Frente', file: form.docRgFrente },
-                  { label: 'RG — Verso', file: form.docRgVerso },
+                  { label: 'RG (frente e verso)', file: form.docRg },
                   { label: 'CPF', file: form.docCpf },
                   { label: 'Comprovante de Residência', file: form.docResidencia },
                   { label: 'Título de Eleitor', file: form.docTituloEleitor },
@@ -898,9 +894,8 @@ export default function InscricaoPage() {
                   </div>
                 )}
 
-                {/* a — RG Frente e Verso */}
-                <FileCard field="docRgFrente" tag="a" label="RG — Frente" hint="Página com foto e dados pessoais" />
-                <FileCard field="docRgVerso" tag="a" label="RG — Verso" hint="Página com assinatura e outros dados" />
+                {/* a — RG (frente e verso em único PDF) */}
+                <FileCard field="docRg" tag="a" label="RG (frente e verso)" hint="Inclua frente e verso em um único arquivo PDF" />
 
                 {/* b — CPF */}
                 <FileCard field="docCpf" tag="b" label="CPF" />
@@ -1050,8 +1045,7 @@ export default function InscricaoPage() {
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Documentos enviados</p>
                   <ul className="space-y-1.5">
                     {[
-                      { label: 'RG — Frente', file: form.docRgFrente },
-                      { label: 'RG — Verso', file: form.docRgVerso },
+                      { label: 'RG (frente e verso)', file: form.docRg },
                       { label: 'CPF', file: form.docCpf },
                       { label: 'Comprovante de Residência', file: form.docResidencia },
                       { label: 'Título de Eleitor', file: form.docTituloEleitor },

@@ -6,7 +6,7 @@ import { InscricaoService } from './inscricao.service';
 import { CriarInscricaoDto } from './dto/criar-inscricao.dto';
 
 const DOC_FIELDS = [
-  'docRgFrente', 'docRgVerso', 'docCpf', 'docResidencia', 'docTituloEleitor',
+  'docRg', 'docCpf', 'docResidencia', 'docTituloEleitor',
   'docQuitacao', 'docReservista', 'docDiploma', 'docPosGraduacao', 'docLotacao',
 ] as const;
 
