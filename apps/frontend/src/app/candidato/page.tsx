@@ -323,7 +323,7 @@ export default function CandidatoPage() {
                         {etapa.label}
                       </span>
                     </div>
-                    {etapa.pontuacao !== null && (
+                    {etapa.pontuacao !== null && etapa.tipo !== 'INSCRICAO' && etapa.tipo !== 'HABILITACAO_DOCUMENTAL' && (
                       <p className="text-xs text-gray-500 mt-0.5">
                         Pontuação: <span className="font-semibold text-gray-700">{etapa.pontuacao} pts</span>
                       </p>
