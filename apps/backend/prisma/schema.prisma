@@ -32,7 +32,8 @@ model Candidato {
   tempoServico  String?
   formacao      String?
   especializacao String?
-  docRgCnh         String?
+  docRgFrente      String?
+  docRgVerso       String?
   docCpf           String?
   docResidencia    String?
   docTituloEleitor String?

@@ -6,7 +6,7 @@ import { InscricaoService } from './inscricao.service';
 import { CriarInscricaoDto } from './dto/criar-inscricao.dto';
 
 const DOC_FIELDS = [
-  'docRgCnh', 'docCpf', 'docResidencia', 'docTituloEleitor',
+  'docRgFrente', 'docRgVerso', 'docCpf', 'docResidencia', 'docTituloEleitor',
   'docQuitacao', 'docReservista', 'docDiploma', 'docPosGraduacao', 'docLotacao',
 ] as const;
 
@@ -29,11 +29,10 @@ export class InscricaoController {
           },
         }),
         fileFilter: (_req, file, cb) => {
-          const allowed = ['.pdf', '.jpg', '.jpeg', '.png'];
-          if (allowed.includes(extname(file.originalname).toLowerCase())) {
+          if (extname(file.originalname).toLowerCase() === '.pdf') {
             cb(null, true);
           } else {
-            cb(new Error('Somente PDF, JPG ou PNG são permitidos.'), false);
+            cb(new Error('Somente arquivos PDF são permitidos.'), false);
           }
         },
         limits: { fileSize: 5 * 1024 * 1024 },
