@@ -66,7 +66,7 @@ export class CandidatoController {
   )
   updateDocs(
     @Request() req: any,
-    @UploadedFiles() files: Record<string, Express.Multer.File[]>,
+    @UploadedFiles() files: Record<string, any[]>,
   ) {
     return this.candidatoService.updateDocs(req.user.id, files ?? {});
   }
