@@ -208,6 +208,7 @@ export default function InscricaoPage() {
   const [fileError, setFileError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [isDuplicate, setIsDuplicate] = useState(false);
+  const [cpfExists, setCpfExists] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [senhaError, setSenhaError] = useState('');
@@ -234,6 +235,20 @@ export default function InscricaoPage() {
     if (submitted) return;
     saveDraft(form, step);
   }, [form, step, submitted]);
+
+  // Verifica se o CPF já existe ao completar os 11 dígitos
+  useEffect(() => {
+    const digits = form.cpf.replace(/\D/g, '');
+    if (digits.length !== 11) { setCpfExists(false); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/inscricao/check-cpf?cpf=${digits}`);
+        const data = await res.json();
+        setCpfExists(!!data.exists);
+      } catch { setCpfExists(false); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [form.cpf]);
 
   const applyDraft = () => {
     if (!pendingDraft) return;
@@ -693,6 +708,15 @@ export default function InscricaoPage() {
                   <div>
                     <label className={labelClass}>CPF *</label>
                     <input required inputMode="numeric" className={inputClass} value={form.cpf} onChange={e => set('cpf', mask.cpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
+                    {cpfExists && (
+                      <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 leading-snug">
+                        Este CPF já possui uma inscrição.{' '}
+                        <a href="/login" className="font-semibold underline hover:text-amber-900">
+                          Acesse sua área aqui
+                        </a>
+                        .
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className={labelClass}>Data de Nascimento *</label>

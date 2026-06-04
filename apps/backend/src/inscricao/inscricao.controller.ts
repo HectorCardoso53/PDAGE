@@ -1,4 +1,4 @@
-import { Body, Controller, Post, HttpCode, HttpStatus, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { Body, Controller, Post, Get, Query, HttpCode, HttpStatus, UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -13,6 +13,11 @@ const DOC_FIELDS = [
 @Controller('inscricao')
 export class InscricaoController {
   constructor(private inscricaoService: InscricaoService) {}
+
+  @Get('check-cpf')
+  checkCpf(@Query('cpf') cpf: string) {
+    return this.inscricaoService.checkCpf(cpf ?? '');
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

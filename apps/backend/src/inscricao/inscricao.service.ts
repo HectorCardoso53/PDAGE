@@ -33,6 +33,13 @@ export class InscricaoService {
     return `${seq}-PMO/SEMED-${ano}`;
   }
 
+  async checkCpf(cpf: string): Promise<{ exists: boolean }> {
+    const clean = cpf.replace(/\D/g, '');
+    if (clean.length !== 11) return { exists: false };
+    const found = await this.prisma.candidato.findUnique({ where: { cpf: clean }, select: { cpf: true } });
+    return { exists: !!found };
+  }
+
   async criar(dto: CriarInscricaoDto, files: Record<string, any[]>) {
     const cpf = dto.cpf.replace(/\D/g, '');
 
