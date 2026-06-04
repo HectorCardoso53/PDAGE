@@ -6,7 +6,7 @@ import Image from 'next/image';
 import {
   FileText, Brain, GraduationCap, ClipboardList,
   BarChart, Award, LogOut, User, CheckCircle,
-  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X,
+  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X, Calendar,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 import Footer from '@/components/Footer';
@@ -54,6 +54,31 @@ const DOCS_INFO: { field: keyof Candidato; label: string }[] = [
 ];
 
 type DashData = { candidato: Candidato; inscricao: Inscricao | null; etapas: Etapa[] };
+
+const ETAPA_CRONOGRAMA: Record<string, { label: string; data: string }[]> = {
+  INSCRICAO: [
+    { label: 'Período de inscrições', data: '04 a 08/06/2026' },
+  ],
+  HABILITACAO_DOCUMENTAL: [
+    { label: 'Homologação das inscrições', data: '09/06/2026' },
+  ],
+  AVALIACAO_COGNITIVA: [
+    { label: 'Realização da prova objetiva', data: '08/07/2026' },
+    { label: 'Divulgação do resultado', data: '21/07/2026' },
+  ],
+  QUALIFICACAO_CURRICULAR: [
+    { label: 'Envio dos documentos curriculares', data: '22 a 26/07/2026' },
+    { label: 'Análise da documentação', data: '28 a 31/07/2026' },
+    { label: 'Resultado preliminar', data: '04/08/2026' },
+  ],
+  PLANO_GESTAO: [
+    { label: 'Envio do plano de gestão escolar', data: '22 a 26/07/2026' },
+    { label: 'Análise do plano de gestão', data: '28 a 31/07/2026' },
+    { label: 'Resultado preliminar', data: '04/08/2026' },
+  ],
+  RESULTADO_FINAL: [],
+  CERTIFICACAO: [],
+};
 
 const ETAPA_ICONS: Record<string, React.ElementType> = {
   HABILITACAO_DOCUMENTAL: FileText,
@@ -350,6 +375,23 @@ export default function CandidatoPage() {
                 {/* Painel expandido */}
                 {isExpanded && (
                   <div className="border-t border-gray-100 px-4 py-3 space-y-3">
+
+                    {/* Cronograma da etapa */}
+                    {(ETAPA_CRONOGRAMA[etapa.tipo]?.length ?? 0) > 0 && (
+                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" /> Cronograma
+                        </p>
+                        <div className="space-y-1">
+                          {ETAPA_CRONOGRAMA[etapa.tipo].map(item => (
+                            <div key={item.label} className="flex items-center justify-between gap-3">
+                              <span className="text-xs text-gray-500">{item.label}</span>
+                              <span className="text-xs font-semibold text-gray-700 flex-shrink-0">{item.data}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* INSCRICAO: exibe resumo + documentos enviados */}
                     {etapa.tipo === 'INSCRICAO' && inscricao && (
