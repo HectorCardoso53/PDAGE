@@ -15,15 +15,11 @@ const navLinks = [
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasAccount, setHasAccount] = useState(false);
-  const [hasRegistered, setHasRegistered] = useState(false);
   const pathname = usePathname();
   const isInscricaoPage = pathname === '/inscricao';
 
   useEffect(() => {
-    const token = !!localStorage.getItem('meritus_token');
-    const registered = !!localStorage.getItem('pdage_inscrito');
-    setHasAccount(token);
-    setHasRegistered(registered && !token);
+    setHasAccount(!!localStorage.getItem('meritus_token'));
   }, []);
 
   const handleNavClick = (href: string) => {
@@ -83,32 +79,34 @@ export default function Header() {
             </nav>
 
             {/* CTA + Mobile Toggle */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {hasAccount ? (
                 <a
                   href="/candidato"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                  className="hidden sm:inline-flex items-center px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
                   style={{ background: '#ffd21f', color: '#001b3d' }}
                 >
                   Área do Candidato
                 </a>
-              ) : hasRegistered ? (
-                <a
-                  href="/login"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
-                  style={{ background: '#ffd21f', color: '#001b3d' }}
-                >
-                  Entrar na minha área
-                </a>
-              ) : !isInscricaoPage ? (
-                <a
-                  href="/inscricao"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
-                  style={{ background: '#ffd21f', color: '#001b3d' }}
-                >
-                  Inscreva-se
-                </a>
-              ) : null}
+              ) : (
+                <>
+                  <a
+                    href="/login"
+                    className="hidden sm:inline-flex items-center px-3 py-2 rounded-full text-xs font-medium text-white/80 hover:text-white border border-white/25 hover:border-white/50 transition-all"
+                  >
+                    Já inscrito? Entre aqui
+                  </a>
+                  {!isInscricaoPage && (
+                    <a
+                      href="/inscricao"
+                      className="hidden sm:inline-flex items-center px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                      style={{ background: '#ffd21f', color: '#001b3d' }}
+                    >
+                      Inscreva-se
+                    </a>
+                  )}
+                </>
+              )}
 
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -156,23 +154,41 @@ export default function Header() {
                   {link.label}
                 </motion.button>
               ))}
-              {(hasAccount || hasRegistered || !isInscricaoPage) && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: navLinks.length * 0.05, duration: 0.2 }}
-                  className="mt-2 pt-2"
-                  style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
-                >
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: navLinks.length * 0.05, duration: 0.2 }}
+                className="mt-2 pt-2 flex flex-col gap-2"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                {hasAccount ? (
                   <a
-                    href={hasAccount ? '/candidato' : hasRegistered ? '/login' : '/inscricao'}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-bold"
+                    href="/candidato"
+                    className="w-full flex items-center justify-center px-4 py-3 rounded-full text-sm font-bold"
                     style={{ background: '#ffd21f', color: '#001b3d' }}
                   >
-                    {hasAccount ? 'Área do Candidato' : hasRegistered ? 'Entrar na minha área' : 'Inscreva-se'}
+                    Área do Candidato
                   </a>
-                </motion.div>
-              )}
+                ) : (
+                  <>
+                    <a
+                      href="/login"
+                      className="w-full flex items-center justify-center px-4 py-3 rounded-full text-sm font-medium text-white border border-white/30"
+                    >
+                      Já inscrito? Entre aqui
+                    </a>
+                    {!isInscricaoPage && (
+                      <a
+                        href="/inscricao"
+                        className="w-full flex items-center justify-center px-4 py-3 rounded-full text-sm font-bold"
+                        style={{ background: '#ffd21f', color: '#001b3d' }}
+                      >
+                        Inscreva-se
+                      </a>
+                    )}
+                  </>
+                )}
+              </motion.div>
             </nav>
           </motion.div>
         )}
