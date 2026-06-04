@@ -5,7 +5,7 @@
 import { useRef, useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { ChevronRight, ChevronLeft, CheckCircle, Upload, User, Briefcase, FileText, Eye, EyeOff } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, Upload, User, Briefcase, FileText, Eye, EyeOff, MapPin, KeyRound } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
 const ESCOLAS: { nome: string; endereco: string }[] = [
@@ -100,9 +100,11 @@ const ESCOLAS: { nome: string; endereco: string }[] = [
 
 const steps = [
   { id: 1, label: 'Dados Pessoais', icon: User },
-  { id: 2, label: 'Dados Funcionais', icon: Briefcase },
-  { id: 3, label: 'Documentos', icon: FileText },
-  { id: 4, label: 'Confirmação', icon: CheckCircle },
+  { id: 2, label: 'Contato', icon: MapPin },
+  { id: 3, label: 'Acesso', icon: KeyRound },
+  { id: 4, label: 'Dados Funcionais', icon: Briefcase },
+  { id: 5, label: 'Documentos', icon: FileText },
+  { id: 6, label: 'Confirmação', icon: CheckCircle },
 ];
 
 const inputClass = "w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white";
@@ -280,12 +282,12 @@ export default function InscricaoPage() {
   };
 
   const handleNext = () => {
-    if (step === 1) {
+    if (step === 3) {
       if (formRef.current && !formRef.current.reportValidity()) return;
       if (form.senha.length < 6) { setSenhaError('A senha deve ter pelo menos 6 caracteres.'); return; }
       if (form.senha !== form.confirmarSenha) { setSenhaError('As senhas não coincidem.'); return; }
       setSenhaError('');
-    } else if (step === 3) {
+    } else if (step === 5) {
       const err = validateDocs();
       if (err) { setFileError(err); return; }
       setFileError('');
@@ -542,7 +544,7 @@ export default function InscricaoPage() {
               Você começou uma inscrição anteriormente como:
             </p>
             <p className="font-semibold text-gray-800 mb-1">{pendingDraft.form.nome || '—'}</p>
-            <p className="text-xs text-gray-400 mb-6">Etapa {pendingDraft.step} de 4 — deseja continuar de onde parou?</p>
+            <p className="text-xs text-gray-400 mb-6">Etapa {pendingDraft.step} de 6 — deseja continuar de onde parou?</p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={applyDraft}
@@ -606,7 +608,7 @@ export default function InscricaoPage() {
         <form
           ref={formRef}
           onSubmit={handleSubmit}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (step < 4) handleNext(); } }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (step < 6) handleNext(); } }}
           className="max-w-3xl mx-auto px-4"
           noValidate
         >
@@ -661,15 +663,94 @@ export default function InscricaoPage() {
                     </select>
                   </div>
                 </div>
+                <label className="flex items-start gap-3 cursor-pointer mt-6 pt-5 border-t border-gray-100">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={form.declaracaoDados}
+                    onChange={e => set('declaracaoDados', e.target.checked)}
+                    className="mt-0.5 w-4 h-4 accent-blue-500 flex-shrink-0"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Declaro que todas as informações prestadas neste formulário são verdadeiras e condizentes com a realidade.
+                    Estou ciente de que a veracidade dos dados é de <strong>inteira responsabilidade do declarante</strong>,
+                    sujeitando-me às sanções administrativas e legais cabíveis em caso de falsidade ou omissão.
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {/* ── Step 2 — Contato / Endereço ── */}
+            {step === 2 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-bold mb-4" style={{ color: '#001b3d' }}>Contato / Endereço</h2>
+                <div>
+                  <label className={labelClass}>Telefone / WhatsApp *</label>
+                  <input required inputMode="numeric" className={inputClass} value={form.telefone} onChange={e => set('telefone', mask.phone(e.target.value))} placeholder="(93) 9 0000-0000" maxLength={16} />
+                </div>
                 <div className={fieldsetClass}>
                   <div>
-                    <label className={labelClass}>Telefone / WhatsApp *</label>
-                    <input required inputMode="numeric" className={inputClass} value={form.telefone} onChange={e => set('telefone', mask.phone(e.target.value))} placeholder="(93) 9 0000-0000" maxLength={16} />
+                    <label className={labelClass}>CEP *</label>
+                    <input required inputMode="numeric" className={inputClass} value={form.cep} onChange={e => set('cep', mask.cep(e.target.value))} placeholder="68270-000" maxLength={9} />
                   </div>
                   <div>
-                    <label className={labelClass}>E-mail *</label>
-                    <input required type="email" className={inputClass} value={form.email} onChange={e => set('email', e.target.value)} placeholder="seu@email.com" />
+                    <label className={labelClass}>Número *</label>
+                    <input required inputMode="numeric" className={inputClass} value={form.numero} onChange={e => set('numero', mask.numeric(e.target.value))} placeholder="Nº" maxLength={10} />
                   </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Logradouro *</label>
+                  <input required className={inputClass} value={form.logradouro} onChange={e => set('logradouro', e.target.value)} placeholder="Rua, Avenida..." />
+                </div>
+                <div className={fieldsetClass}>
+                  <div className="relative">
+                    <label className={labelClass}>Bairro *</label>
+                    <input
+                      required
+                      autoComplete="off"
+                      className={inputClass}
+                      value={form.bairro}
+                      onChange={e => set('bairro', e.target.value)}
+                      placeholder="Digite para buscar o bairro..."
+                    />
+                    {(() => {
+                      const BAIRROS = ['CENTRO','NOSSA SENHORA DE FÁTIMA','SANTA LUZIA','SÃO PEDRO','NOSSA SENHORA DAS GRAÇAS','PENTA','PENTA 2','NOVO HORIZONTE','BELA VISTA','SÃO LÁZARO','JESUS MISERICORDIOSO','SANTÍSSIMO SACRAMENTO','ÁREA PASTORAL','SÃO FRANCISCO','PARAISÓPOLIS','PERPÉTUO SOCORRO','CIDADE NOVA','SÃO JOSÉ OPERÁRIO','SÃO JOSÉ OPERÁRIO 2'];
+                      const q = form.bairro.trim().toLowerCase();
+                      const matches = q.length >= 1
+                        ? BAIRROS.filter(b => b.toLowerCase().includes(q) && b !== form.bairro.toUpperCase())
+                        : [];
+                      if (!matches.length) return null;
+                      return (
+                        <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto text-sm">
+                          {matches.map(b => (
+                            <li
+                              key={b}
+                              onMouseDown={e => { e.preventDefault(); set('bairro', b); }}
+                              className="px-4 py-2.5 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-0 font-medium text-gray-800"
+                            >
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Cidade *</label>
+                    <input required className={inputClass} value={form.cidade} onChange={e => set('cidade', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Step 3 — Acesso ── */}
+            {step === 3 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-bold mb-4" style={{ color: '#001b3d' }}>Dados de Acesso</h2>
+                <p className="text-sm text-gray-500 -mt-2">Estes dados serão usados para acessar sua área do candidato após a inscrição.</p>
+                <div>
+                  <label className={labelClass}>E-mail de acesso *</label>
+                  <input required type="email" className={inputClass} value={form.email} onChange={e => set('email', e.target.value)} placeholder="seu@email.com" />
                 </div>
                 <div className={fieldsetClass}>
                   <div>
@@ -715,82 +796,11 @@ export default function InscricaoPage() {
                     {senhaError}
                   </p>
                 )}
-
-                <div className="pt-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Endereço</p>
-                  <div className={fieldsetClass}>
-                    <div>
-                      <label className={labelClass}>CEP *</label>
-                      <input required inputMode="numeric" className={inputClass} value={form.cep} onChange={e => set('cep', mask.cep(e.target.value))} placeholder="68270-000" maxLength={9} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Número *</label>
-                      <input required inputMode="numeric" className={inputClass} value={form.numero} onChange={e => set('numero', mask.numeric(e.target.value))} placeholder="Nº" maxLength={10} />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label className={labelClass}>Logradouro *</label>
-                    <input required className={inputClass} value={form.logradouro} onChange={e => set('logradouro', e.target.value)} placeholder="Rua, Avenida..." />
-                  </div>
-                  <div className={`${fieldsetClass} mt-4`}>
-                    <div className="relative">
-                      <label className={labelClass}>Bairro *</label>
-                      <input
-                        required
-                        autoComplete="off"
-                        className={inputClass}
-                        value={form.bairro}
-                        onChange={e => set('bairro', e.target.value)}
-                        placeholder="Digite para buscar o bairro..."
-                      />
-                      {(() => {
-                        const BAIRROS = ['CENTRO','NOSSA SENHORA DE FÁTIMA','SANTA LUZIA','SÃO PEDRO','NOSSA SENHORA DAS GRAÇAS','PENTA','PENTA 2','NOVO HORIZONTE','BELA VISTA','SÃO LÁZARO','JESUS MISERICORDIOSO','SANTÍSSIMO SACRAMENTO','ÁREA PASTORAL','SÃO FRANCISCO','PARAISÓPOLIS','PERPÉTUO SOCORRO','CIDADE NOVA','SÃO JOSÉ OPERÁRIO','SÃO JOSÉ OPERÁRIO 2'];
-                        const q = form.bairro.trim().toLowerCase();
-                        const matches = q.length >= 1
-                          ? BAIRROS.filter(b => b.toLowerCase().includes(q) && b !== form.bairro.toUpperCase())
-                          : [];
-                        if (!matches.length) return null;
-                        return (
-                          <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto text-sm">
-                            {matches.map(b => (
-                              <li
-                                key={b}
-                                onMouseDown={e => { e.preventDefault(); set('bairro', b); }}
-                                className="px-4 py-2.5 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-0 font-medium text-gray-800"
-                              >
-                                {b}
-                              </li>
-                            ))}
-                          </ul>
-                        );
-                      })()}
-                    </div>
-                    <div>
-                      <label className={labelClass}>Cidade *</label>
-                      <input required className={inputClass} value={form.cidade} onChange={e => set('cidade', e.target.value)} />
-                    </div>
-                  </div>
-                </div>
-
-                <label className="flex items-start gap-3 cursor-pointer mt-6 pt-5 border-t border-gray-100">
-                  <input
-                    type="checkbox"
-                    required
-                    checked={form.declaracaoDados}
-                    onChange={e => set('declaracaoDados', e.target.checked)}
-                    className="mt-0.5 w-4 h-4 accent-blue-500 flex-shrink-0"
-                  />
-                  <span className="text-sm text-gray-600">
-                    Declaro que todas as informações prestadas neste formulário são verdadeiras e condizentes com a realidade.
-                    Estou ciente de que a veracidade dos dados é de <strong>inteira responsabilidade do declarante</strong>,
-                    sujeitando-me às sanções administrativas e legais cabíveis em caso de falsidade ou omissão.
-                  </span>
-                </label>
               </div>
             )}
 
-            {/* ── Step 2 — Dados Funcionais ── */}
-            {step === 2 && (
+            {/* ── Step 4 — Dados Funcionais ── */}
+            {step === 4 && (
               <div className="space-y-4">
                 <h2 className="text-lg font-bold mb-4" style={{ color: '#001b3d' }}>Dados Funcionais</h2>
                 <div className={fieldsetClass}>
@@ -889,8 +899,8 @@ export default function InscricaoPage() {
               </div>
             )}
 
-            {/* ── Step 3 — Documentos ── */}
-            {step === 3 && (
+            {/* ── Step 5 — Documentos ── */}
+            {step === 5 && (
               <div className="space-y-4">
                 <h2 className="text-lg font-bold mb-1" style={{ color: '#001b3d' }}>Documentos</h2>
                 <p className="text-sm text-gray-500 mb-2">
@@ -1006,8 +1016,8 @@ export default function InscricaoPage() {
               </div>
             )}
 
-            {/* ── Step 4 — Confirmação ── */}
-            {step === 4 && (
+            {/* ── Step 6 — Confirmação ── */}
+            {step === 6 && (
               <div className="space-y-5">
                 <h2 className="text-lg font-bold mb-4" style={{ color: '#001b3d' }}>Confirmação</h2>
 
@@ -1119,7 +1129,7 @@ export default function InscricaoPage() {
                   <ChevronLeft className="w-4 h-4" /> Anterior
                 </button>
               ) : <div />}
-              {step < 4 ? (
+              {step < 6 ? (
                 <button type="button" onClick={handleNext}
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
                   style={{ background: '#001b3d' }}>

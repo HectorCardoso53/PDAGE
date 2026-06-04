@@ -6,18 +6,9 @@ import Image from 'next/image';
 import { Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
-function formatCpf(value: string) {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 11)
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-}
-
 export default function LoginPage() {
   const router = useRouter();
-  const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [showSenha, setShowSenha] = useState(false);
   const [error, setError] = useState('');
@@ -32,13 +23,13 @@ export default function LoginPage() {
       const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cpf, senha }),
+        body: JSON.stringify({ email, senha }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || 'CPF ou senha incorretos.');
+        setError(data.message || 'E-mail ou senha incorretos.');
         return;
       }
 
@@ -55,10 +46,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ backgroundColor: '#f4f6f8' }}>
 
-      {/* Card */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
 
-        {/* Header */}
         <div className="px-8 pt-8 pb-6 text-center" style={{ background: '#001b3d' }}>
           <div className="flex justify-center mb-3">
             <Image src="/logo.png" alt="Meritus" width={48} height={48} className="drop-shadow" />
@@ -67,22 +56,19 @@ export default function LoginPage() {
           <p className="text-sm" style={{ color: '#38b6ff' }}>Meritus · Gestores Escolares · Oriximiná/PA</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="px-8 py-7 space-y-5">
           <p className="text-sm text-gray-500 text-center -mt-1">
-            Acesse com seu CPF e senha cadastrados na inscrição.
+            Acesse com seu e-mail e senha cadastrados na inscrição.
           </p>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
             <input
               required
-              type="text"
-              inputMode="numeric"
-              value={cpf}
-              onChange={e => setCpf(formatCpf(e.target.value))}
-              placeholder="000.000.000-00"
-              maxLength={14}
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="seu@email.com"
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
             />
           </div>

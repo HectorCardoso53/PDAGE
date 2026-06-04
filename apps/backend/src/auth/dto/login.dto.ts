@@ -1,9 +1,8 @@
-import { IsString, Matches } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
 
 export class LoginDto {
-  @IsString()
-  @Matches(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/, { message: 'CPF inválido' })
-  cpf: string;
+  @IsEmail({}, { message: 'E-mail inválido' })
+  email: string;
 
   @IsString()
   senha: string;

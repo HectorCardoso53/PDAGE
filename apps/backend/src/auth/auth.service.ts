@@ -15,14 +15,12 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto) {
-    const cpf = dto.cpf.replace(/\D/g, '');
-
-    const candidato = await this.prisma.candidato.findUnique({
-      where: { cpf },
+    const candidato = await this.prisma.candidato.findFirst({
+      where: { email: dto.email },
     });
 
     if (!candidato || !candidato.senha) {
-      throw new UnauthorizedException('CPF não encontrado. Verifique se você realizou a inscrição.');
+      throw new UnauthorizedException('E-mail não encontrado. Verifique se você realizou a inscrição.');
     }
 
     const senhaOk = await bcrypt.compare(dto.senha, candidato.senha);
