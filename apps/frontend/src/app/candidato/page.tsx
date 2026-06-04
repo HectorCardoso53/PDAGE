@@ -87,7 +87,7 @@ export default function CandidatoPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => {
-        if (r.status === 401) { router.replace('/login'); return null; }
+        if (!r.ok) { localStorage.removeItem('meritus_token'); router.replace('/login'); return null; }
         return r.json();
       })
       .then(d => { if (d) setData(d); })
