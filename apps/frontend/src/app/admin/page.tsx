@@ -87,7 +87,6 @@ function getStatusCfg(status: StatusEtapa, etapaTipo: string) {
 }
 
 const STATUS_OPTIONS: { value: StatusEtapa; label: string; color: string; bg: string; border: string }[] = [
-  { value: 'PENDENTE',   label: 'Pendente',    color: 'text-gray-600',  bg: 'bg-gray-100',  border: 'border-gray-300' },
   { value: 'EM_ANALISE', label: 'Em análise',  color: 'text-amber-700', bg: 'bg-amber-50',  border: 'border-amber-400' },
   { value: 'APROVADO',   label: 'Habilitado',  color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-500' },
   { value: 'REPROVADO',  label: 'Inabilitado', color: 'text-red-700',   bg: 'bg-red-50',    border: 'border-red-500' },
@@ -958,7 +957,7 @@ export default function AdminPage() {
                           {/* Status */}
                           <div>
                             <p className="text-xs text-gray-500 mb-2">Status</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                               {STATUS_OPTIONS.map(opt => (
                                 <button key={opt.value}
                                   onClick={() => setEditForm(f => ({ ...f, status: opt.value }))}
@@ -971,18 +970,6 @@ export default function AdminPage() {
                                 </button>
                               ))}
                             </div>
-                          </div>
-
-                          {/* Observação */}
-                          <div>
-                            <label className="text-xs text-gray-500 mb-1 block">
-                              Observação <span className="text-gray-400">(opcional)</span>
-                            </label>
-                            <textarea rows={2}
-                              value={editForm.observacao}
-                              onChange={e => setEditForm(f => ({ ...f, observacao: e.target.value }))}
-                              placeholder="Anotação sobre esta etapa..."
-                              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-300" />
                           </div>
 
                           <div className="flex justify-end">
