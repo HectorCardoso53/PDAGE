@@ -1143,9 +1143,7 @@ export default function InscricaoPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: '#f0f7ff', border: '1.5px solid #38b6ff' }}>
-                  <img src="/logo.png" alt="Prefeitura" className="w-8 h-8 object-contain" />
-                </div>
+                <img src="/logo.png" alt="Prefeitura" className="w-10 h-10 object-contain flex-shrink-0" />
                 <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Verifique antes de enviar</h3>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">
