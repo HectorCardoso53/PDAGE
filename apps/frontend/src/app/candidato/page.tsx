@@ -727,18 +727,39 @@ export default function CandidatoPage() {
             <div className="px-6 py-5 space-y-3">
               {DOCS_INFO.map(({ field, label }) => {
                 const jaEnviado = !!candidato[field];
+                const temProblema = (data.docsComProblema ?? []).includes(field as string);
                 const novoArquivo = docFiles[field] ?? null;
+
+                const cardClass =
+                  novoArquivo  ? 'border-green-200 bg-green-50' :
+                  temProblema  ? 'border-red-200 bg-red-50' :
+                  jaEnviado    ? 'border-green-200 bg-green-50' :
+                                 'border-amber-200 bg-amber-50';
+
+                const iconClass =
+                  novoArquivo  ? 'text-green-600' :
+                  temProblema  ? 'text-red-600' :
+                  jaEnviado    ? 'text-green-600' :
+                                 'text-amber-600';
+
                 return (
-                  <div key={field} className={`rounded-xl border px-4 py-3 ${jaEnviado && !novoArquivo ? 'border-green-200 bg-green-50' : novoArquivo ? 'border-blue-200 bg-blue-50' : 'border-amber-200 bg-amber-50'}`}>
+                  <div key={field} className={`rounded-xl border px-4 py-3 ${cardClass}`}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0">
-                        <FileText className={`w-4 h-4 flex-shrink-0 ${jaEnviado && !novoArquivo ? 'text-green-600' : novoArquivo ? 'text-blue-600' : 'text-amber-600'}`} />
+                        <FileText className={`w-4 h-4 flex-shrink-0 ${iconClass}`} />
                         <span className="text-sm font-medium text-gray-700 truncate">{label}</span>
-                        {jaEnviado && !novoArquivo && <span className="text-xs text-green-600 font-semibold flex-shrink-0">✓ enviado</span>}
-                        {novoArquivo && <span className="text-xs text-blue-600 font-semibold flex-shrink-0 truncate max-w-[100px]">{novoArquivo.name}</span>}
+                        {novoArquivo && (
+                          <span className="text-xs text-green-600 font-semibold flex-shrink-0 truncate max-w-[100px]">✓ {novoArquivo.name}</span>
+                        )}
+                        {!novoArquivo && temProblema && (
+                          <span className="text-xs text-red-600 font-semibold flex-shrink-0">⚠ reenviar</span>
+                        )}
+                        {!novoArquivo && !temProblema && jaEnviado && (
+                          <span className="text-xs text-green-600 font-semibold flex-shrink-0">✓ enviado</span>
+                        )}
                       </div>
                       <label className="flex-shrink-0 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors">
-                        {novoArquivo ? 'Trocar' : jaEnviado ? 'Substituir' : 'Selecionar'}
+                        {novoArquivo ? 'Trocar' : temProblema ? 'Reenviar' : jaEnviado ? 'Substituir' : 'Selecionar'}
                         <input
                           type="file"
                           accept=".pdf"
