@@ -561,15 +561,15 @@ export default function AdminPage() {
             {currentUser && (
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-xs text-white/70 max-w-[200px] truncate">{currentUser.nome}</span>
-                {currentUser.permissao === 'VISUALIZADOR' && (
-                  <span className="text-[10px] text-purple-300 font-semibold">Visualizador</span>
+                {currentUser.permissao === 'MASTER' && (
+                  <span className="text-[10px] text-amber-300 font-semibold">Master</span>
                 )}
                 {currentUser.permissao === 'AVALIADOR' && (
                   <span className="text-[10px] text-blue-300 font-semibold">Avaliador</span>
                 )}
               </div>
             )}
-            {currentUser?.role === 'admin' && (
+            {(currentUser?.role === 'admin' || (currentUser?.role === 'comissao' && currentUser?.permissao === 'MASTER')) && (
               <>
                 <button onClick={() => { setShowMembros(true); loadMembros(); }}
                   className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
@@ -658,8 +658,8 @@ export default function AdminPage() {
                     <label className="block text-xs text-gray-500 mb-1">Permissão *</label>
                     <div className="flex gap-3">
                       {[
-                        { val: 'AVALIADOR',    label: 'Avaliador',    desc: 'Pode revisar e editar etapas dos candidatos' },
-                        { val: 'VISUALIZADOR', label: 'Visualizador', desc: 'Apenas visualiza dados, sem poder editar' },
+                        { val: 'AVALIADOR', label: 'Avaliador', desc: 'Pode avaliar inscrições e editar etapas dos candidatos' },
+                        { val: 'MASTER',    label: 'Master',    desc: 'Avaliador + acesso à Auditoria e Gestão de Usuários' },
                       ].map(opt => (
                         <label key={opt.val} className={`flex-1 flex items-start gap-2 p-3 rounded-lg border-2 cursor-pointer transition-colors ${novoMembroForm.permissao === opt.val ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-200'}`}>
                           <input type="radio" name="novaPermissao" className="mt-0.5 accent-blue-500" checked={novoMembroForm.permissao === opt.val} onChange={() => setNovoMembroForm(f => ({ ...f, permissao: opt.val }))} />
@@ -707,13 +707,13 @@ export default function AdminPage() {
                             value={m.permissao ?? 'AVALIADOR'}
                             onChange={e => handleUpdatePermissao(m.id, e.target.value)}
                             className={`text-xs font-semibold px-2 py-1 rounded-lg border cursor-pointer focus:outline-none ${
-                              m.permissao === 'VISUALIZADOR'
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              m.permissao === 'MASTER'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
                                 : 'bg-blue-50 text-blue-700 border-blue-200'
                             }`}
                             title="Alterar permissão">
                             <option value="AVALIADOR">Avaliador</option>
-                            <option value="VISUALIZADOR">Visualizador</option>
+                            <option value="MASTER">Master</option>
                           </select>
                           {/* Toggle ativo/inativo */}
                           <button
@@ -1095,7 +1095,7 @@ export default function AdminPage() {
               })()}
 
               {/* Ações */}
-              {reviewAction === null && currentUser?.permissao !== 'VISUALIZADOR' && (
+              {reviewAction === null && (
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setReviewAction('approve')}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
@@ -1237,7 +1237,7 @@ export default function AdminPage() {
                             <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                               <StatusIcon className="w-3 h-3" /> {cfg.label}
                             </span>
-                            {etapa.id && currentUser?.permissao !== 'VISUALIZADOR' && (
+                            {etapa.id && (
                               <button
                                 onClick={() => isEditing ? setEditingEtapa(null) : startEdit(etapa)}
                                 className="px-3 py-1 rounded-lg text-xs font-semibold border transition-colors"

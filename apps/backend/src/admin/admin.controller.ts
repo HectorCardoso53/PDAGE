@@ -35,31 +35,35 @@ export class AdminController {
 
   @Post('membros')
   createMembro(@Body() dto: any, @Req() req: any) {
-    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
     return this.adminService.createMembro(dto);
   }
 
   @Patch('membros/:id/toggle')
   toggleMembro(@Param('id') id: string, @Req() req: any) {
-    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
     return this.adminService.toggleMembro(id);
   }
 
   @Patch('membros/:id/senha')
   resetSenhaMembro(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
     return this.adminService.resetSenhaMembro(id, body.novaSenha);
   }
 
   @Patch('membros/:id/permissao')
   updatePermissao(@Param('id') id: string, @Body() body: any, @Req() req: any) {
-    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
     return this.adminService.updatePermissao(id, body.permissao);
   }
 
   @Delete('membros/:id')
   deleteMembro(@Param('id') id: string, @Req() req: any) {
-    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
     return this.adminService.deleteMembro(id);
+  }
+
+  private isMasterOrAdmin(user: any): boolean {
+    return user?.role === 'admin' || (user?.role === 'comissao' && user?.permissao === 'MASTER');
   }
 }

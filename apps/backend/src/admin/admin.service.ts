@@ -212,7 +212,7 @@ export class AdminService implements OnModuleInit {
     const existing = await this.prisma.membroComissao.findFirst({ where: { OR: [{ cpf }, { email: dto.email }] } });
     if (existing) throw new ConflictException('CPF ou e-mail já cadastrado.');
     const senhaHash = await bcrypt.hash(dto.senha, 10);
-    const permissao = dto.permissao === 'VISUALIZADOR' ? 'VISUALIZADOR' : 'AVALIADOR';
+    const permissao = dto.permissao === 'MASTER' ? 'MASTER' : 'AVALIADOR';
     return this.prisma.membroComissao.create({
       data: { nome: dto.nome, cpf, email: dto.email, senhaHash, ativo: true, permissao },
       select: { id: true, nome: true, cpf: true, email: true, ativo: true, permissao: true, createdAt: true },
@@ -222,7 +222,7 @@ export class AdminService implements OnModuleInit {
   async updatePermissao(id: string, permissao: string) {
     const m = await this.prisma.membroComissao.findUnique({ where: { id } });
     if (!m) throw new NotFoundException('Membro não encontrado.');
-    const val = permissao === 'VISUALIZADOR' ? 'VISUALIZADOR' : 'AVALIADOR';
+    const val = permissao === 'MASTER' ? 'MASTER' : 'AVALIADOR';
     return this.prisma.membroComissao.update({
       where: { id },
       data: { permissao: val },
