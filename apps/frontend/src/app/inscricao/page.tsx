@@ -887,7 +887,7 @@ export default function InscricaoPage() {
               <div className="space-y-4">
                 <h2 className="text-lg font-bold mb-1" style={{ color: '#001b3d' }}>Documentos</h2>
                 <p className="text-sm text-gray-500 mb-2">
-                  Envie todos os documentos em <strong>PDF</strong>. Nomeie cada arquivo conforme indicado no campo. Tamanho máximo: 5 MB por arquivo.
+                  Envie todos os documentos em <strong>PDF</strong>. Nomeie cada arquivo conforme indicado no campo. Tamanho máximo: 20 MB por arquivo.
                 </p>
 
                 {fileError && (
