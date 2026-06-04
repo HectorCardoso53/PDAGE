@@ -83,7 +83,7 @@ export default function Header() {
               {hasAccount ? (
                 <a
                   href="/login"
-                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
                   style={{ background: '#ffd21f', color: '#001b3d' }}
                 >
                   Área do Candidato
@@ -91,7 +91,7 @@ export default function Header() {
               ) : !isInscricaoPage ? (
                 <a
                   href="/inscricao"
-                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
                   style={{ background: '#ffd21f', color: '#001b3d' }}
                 >
                   Inscreva-se
