@@ -61,6 +61,8 @@ services:
       - MAIL_SECURE=false
       - MAIL_USER=${MAIL_USER:-mapadadosoriximina@gmail.com}
       - MAIL_PASS=${MAIL_PASS}
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -103,3 +105,5 @@ networks:
 volumes:
   postgres_data:
     name: pdage-postgres-data
+  uploads_data:
+    name: pdage-uploads-data
