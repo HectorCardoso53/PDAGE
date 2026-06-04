@@ -207,6 +207,7 @@ export default function InscricaoPage() {
   const [protocolo, setProtocolo] = useState('');
   const [fileError, setFileError] = useState('');
   const [submitError, setSubmitError] = useState('');
+  const [isDuplicate, setIsDuplicate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [senhaError, setSenhaError] = useState('');
@@ -359,7 +360,8 @@ export default function InscricaoPage() {
       const data = await res.json();
 
       if (res.status === 409) {
-        setSubmitError(data.message);
+        setIsDuplicate(true);
+        setShowConfirm(false);
         return;
       }
 
@@ -396,6 +398,45 @@ export default function InscricaoPage() {
       setSubmitting(false);
     }
   };
+
+  if (isDuplicate) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen pt-20 pb-16 px-4 flex items-center justify-center" style={{ backgroundColor: '#f4f6f8' }}>
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="px-8 pt-8 pb-6 text-center" style={{ background: '#001b3d' }}>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 bg-amber-400">
+                <User className="w-7 h-7 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-white mb-1">Você já está inscrito!</h1>
+              <p className="text-sm" style={{ color: '#38b6ff' }}>Meritus · Gestores Escolares · Oriximiná/PA</p>
+            </div>
+            <div className="px-8 py-7 space-y-5 text-center">
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Seu CPF já possui uma inscrição registrada no sistema.<br />
+                Acesse a <strong>Área do Candidato</strong> para acompanhar o andamento da sua inscrição.
+              </p>
+              <a
+                href="/login"
+                className="w-full flex items-center justify-center py-3 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
+                style={{ background: '#001b3d' }}
+              >
+                Acessar minha área
+              </a>
+              <button
+                onClick={() => setIsDuplicate(false)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                Voltar ao formulário
+              </button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   if (submitted) {
     return (
