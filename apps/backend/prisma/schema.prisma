@@ -46,6 +46,32 @@ model Candidato {
   updatedAt     DateTime    @updatedAt
 }
 
+model MembroComissao {
+  id        String     @id @default(cuid())
+  nome      String
+  cpf       String     @unique
+  email     String     @unique
+  senhaHash String
+  ativo     Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  logs      AuditLog[]
+}
+
+model AuditLog {
+  id            String          @id @default(cuid())
+  membroId      String?
+  membro        MembroComissao? @relation(fields: [membroId], references: [id])
+  autorNome     String
+  autorRole     String
+  acao          String
+  etapaTipo     String?
+  candidatoNome String?
+  dadosAntes    String?
+  dadosDepois   String?
+  createdAt     DateTime        @default(now())
+}
+
 model Inscricao {
   id          String        @id @default(cuid())
   protocolo   String        @unique

@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateEtapaDto } from './dto/update-etapa.dto';
 
@@ -22,9 +23,37 @@ const ETAPA_LABELS: Record<string, string> = {
   CERTIFICACAO: 'Certificação',
 };
 
+const MEMBROS_COMISSAO = [
+  { nome: 'Rogenáurea Farias do Rego',       cpf: '51219050253', email: 'naurea.rego36@gmail.com' },
+  { nome: 'Felipe de Almeida Alvarenga',      cpf: '02346398225', email: 'feliperosbel11@gmail.com' },
+  { nome: 'Evandro Soares Leite',             cpf: '41494873249', email: 'evanleite@gmail.com' },
+  { nome: 'Maria Laise Picanço Siqueira',     cpf: '31108555268', email: 'lala-siqueira@hotmail.com' },
+  { nome: 'Jorge Hipólito de Souza',          cpf: '65121171234', email: 'jorgehipolitodesouza@gmail.com' },
+  { nome: 'Kátia Cristina do Rosário Lopes',  cpf: '00936298260', email: 'katia.cristina000@gmail.com' },
+  { nome: 'Odete de Souza Cunha',             cpf: '44365942204', email: 'odetecunha_5.cunha@hotmail.com' },
+];
+
 @Injectable()
-export class AdminService {
+export class AdminService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
+
+  async onModuleInit() {
+    try {
+      const count = await this.prisma.membroComissao.count();
+      if (count === 0) {
+        const senhaHash = await bcrypt.hash('Meritus@2026!', 10);
+        for (const m of MEMBROS_COMISSAO) {
+          await this.prisma.membroComissao.upsert({
+            where: { cpf: m.cpf },
+            update: {},
+            create: { ...m, senhaHash, ativo: true },
+          });
+        }
+      }
+    } catch {
+      // Tabela ainda não existe (antes do db push) — ignora silenciosamente
+    }
+  }
 
   async listCandidatos() {
     const candidatos = await this.prisma.candidato.findMany({
@@ -112,11 +141,24 @@ export class AdminService {
     return { ok: true };
   }
 
-  async updateEtapa(etapaId: string, dto: UpdateEtapaDto) {
-    const etapa = await this.prisma.etapaStatus.findUnique({ where: { id: etapaId } });
+  async updateEtapa(
+    etapaId: string,
+    dto: UpdateEtapaDto,
+    user: { sub: string; role: string; nome: string },
+  ) {
+    const etapa = await this.prisma.etapaStatus.findUnique({
+      where: { id: etapaId },
+      include: { inscricao: { include: { candidato: true } } },
+    });
     if (!etapa) throw new NotFoundException('Etapa não encontrada.');
 
-    return this.prisma.etapaStatus.update({
+    const dadosAntes = {
+      status: etapa.status,
+      pontuacao: etapa.pontuacao,
+      observacao: etapa.observacao,
+    };
+
+    const atualizado = await this.prisma.etapaStatus.update({
       where: { id: etapaId },
       data: {
         status: dto.status,
@@ -124,6 +166,45 @@ export class AdminService {
         observacao: dto.observacao ?? null,
         docChecks: dto.docChecks ?? null,
       },
+    });
+
+    const acaoVerbo =
+      dto.status === 'APROVADO'   ? 'Habilitou' :
+      dto.status === 'REPROVADO'  ? 'Inabilitou' :
+      dto.status === 'EM_ANALISE' ? 'Colocou em análise' : 'Atualizou';
+
+    await this.prisma.auditLog.create({
+      data: {
+        membroId: user.role === 'comissao' ? user.sub : null,
+        autorNome: user.nome ?? 'Administrador Geral',
+        autorRole: user.role,
+        acao: `${acaoVerbo} — ${ETAPA_LABELS[etapa.etapa] ?? etapa.etapa}`,
+        etapaTipo: etapa.etapa,
+        candidatoNome: etapa.inscricao?.candidato?.nome ?? null,
+        dadosAntes: JSON.stringify(dadosAntes),
+        dadosDepois: JSON.stringify({
+          status: atualizado.status,
+          pontuacao: atualizado.pontuacao,
+          observacao: atualizado.observacao,
+        }),
+      },
+    });
+
+    return atualizado;
+  }
+
+  async getAuditLogs() {
+    return this.prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+      include: { membro: { select: { nome: true, email: true } } },
+    });
+  }
+
+  async listMembros() {
+    return this.prisma.membroComissao.findMany({
+      orderBy: { nome: 'asc' },
+      select: { id: true, nome: true, cpf: true, email: true, ativo: true, createdAt: true },
     });
   }
 }

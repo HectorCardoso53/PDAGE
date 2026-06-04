@@ -46,11 +46,24 @@ export class AuthService {
     const adminLogin = this.config.get<string>('ADMIN_LOGIN');
     const adminSenha = this.config.get<string>('ADMIN_SENHA');
 
-    if (dto.login !== adminLogin || dto.senha !== adminSenha) {
-      throw new UnauthorizedException('Credenciais inválidas.');
+    // Superadmin via variáveis de ambiente
+    if (dto.login === adminLogin && dto.senha === adminSenha) {
+      const payload = { sub: 'admin', role: 'admin', nome: 'Administrador Geral' };
+      return { access_token: this.jwt.sign(payload) };
     }
 
-    const payload = { sub: 'admin', role: 'admin', nome: 'Administrador' };
+    // Membro da comissão via banco (login = CPF formatado ou cru)
+    const cpf = dto.login.replace(/\D/g, '');
+    const membro = await this.prisma.membroComissao.findFirst({
+      where: { OR: [{ cpf }, { email: dto.login }], ativo: true },
+    });
+
+    if (!membro) throw new UnauthorizedException('Credenciais inválidas.');
+
+    const senhaOk = await bcrypt.compare(dto.senha, membro.senhaHash);
+    if (!senhaOk) throw new UnauthorizedException('Credenciais inválidas.');
+
+    const payload = { sub: membro.id, role: 'comissao', nome: membro.nome, cpf: membro.cpf };
     return { access_token: this.jwt.sign(payload) };
   }
 }

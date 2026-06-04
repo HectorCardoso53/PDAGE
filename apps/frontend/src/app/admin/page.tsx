@@ -9,6 +9,10 @@ import {
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 
+function parseJwt(token: string): { role: string; nome: string; sub: string } | null {
+  try { return JSON.parse(atob(token.split('.')[1])); } catch { return null; }
+}
+
 const DOC_FIELDS: { field: keyof AdminCandidato; label: string }[] = [
   { field: 'docRg',            label: 'RG ou CNH' },
   { field: 'docCpf',           label: 'CPF' },
@@ -226,6 +230,11 @@ export default function AdminPage() {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [docChecks, setDocChecks] = useState<Record<string, boolean | null>>({});
+  const [currentUser, setCurrentUser] = useState<{ role: string; nome: string } | null>(null);
+  const [showAuditoria, setShowAuditoria] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [showMembros, setShowMembros] = useState(false);
+  const [membros, setMembros] = useState<any[]>([]);
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -254,6 +263,8 @@ export default function AdminPage() {
   const load = useCallback(async () => {
     const t = localStorage.getItem('meritus_admin_token');
     if (!t) { router.replace('/admin/login'); return; }
+    const user = parseJwt(t);
+    setCurrentUser(user);
     try {
       const res = await apiFetch('/api/admin/candidatos', {
         headers: { Authorization: `Bearer ${t}` },
@@ -267,6 +278,24 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, [router]);
+
+  const loadAuditLogs = useCallback(async () => {
+    const t = localStorage.getItem('meritus_admin_token');
+    if (!t) return;
+    try {
+      const res = await apiFetch('/api/admin/audit-logs', { headers: { Authorization: `Bearer ${t}` } });
+      if (res.ok) setAuditLogs(await res.json());
+    } catch { /* silencioso */ }
+  }, []);
+
+  const loadMembros = useCallback(async () => {
+    const t = localStorage.getItem('meritus_admin_token');
+    if (!t) return;
+    try {
+      const res = await apiFetch('/api/admin/membros', { headers: { Authorization: `Bearer ${t}` } });
+      if (res.ok) setMembros(await res.json());
+    } catch { /* silencioso */ }
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -446,12 +475,133 @@ export default function AdminPage() {
             <span className="font-bold text-white text-lg">Meritus</span>
             <span className="hidden sm:inline text-xs text-white/50 ml-1">— Painel Administrativo</span>
           </div>
-          <button onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-            <LogOut className="w-4 h-4" /> Sair
-          </button>
+          <div className="flex items-center gap-2">
+            {currentUser && (
+              <span className="hidden sm:block text-xs text-white/50 max-w-[200px] truncate">
+                {currentUser.nome}
+              </span>
+            )}
+            {currentUser?.role === 'admin' && (
+              <>
+                <button onClick={() => { setShowMembros(true); loadMembros(); }}
+                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+                  Comissão
+                </button>
+                <button onClick={() => { setShowAuditoria(true); loadAuditLogs(); }}
+                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+                  Auditoria
+                </button>
+              </>
+            )}
+            <button onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <LogOut className="w-4 h-4" /> Sair
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Modal — Membros da Comissão */}
+      {showMembros && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 py-8 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Membros da Comissão</h3>
+              <button onClick={() => setShowMembros(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-2">
+              <p className="text-xs text-gray-400 mb-3">Senha inicial de todos os membros: <strong>Meritus@2026!</strong> — CPF como login.</p>
+              {membros.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">Carregando...</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-gray-400 uppercase text-left border-b border-gray-100">
+                        <th className="pb-2 font-semibold">Nome</th>
+                        <th className="pb-2 font-semibold">CPF</th>
+                        <th className="pb-2 font-semibold">E-mail</th>
+                        <th className="pb-2 font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {membros.map((m: any) => (
+                        <tr key={m.id} className="text-gray-700">
+                          <td className="py-2.5 font-medium">{m.nome}</td>
+                          <td className="py-2.5 text-gray-500 font-mono text-xs">{m.cpf}</td>
+                          <td className="py-2.5 text-gray-500 text-xs truncate max-w-[160px]">{m.email}</td>
+                          <td className="py-2.5">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {m.ativo ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Auditoria */}
+      {showAuditoria && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 py-8 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Auditoria de Ações</h3>
+              <button onClick={() => setShowAuditoria(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              {auditLogs.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">Nenhuma ação registrada ainda.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-gray-400 uppercase text-left border-b border-gray-100">
+                        <th className="pb-2 font-semibold">Data/Hora</th>
+                        <th className="pb-2 font-semibold">Autor</th>
+                        <th className="pb-2 font-semibold">Ação</th>
+                        <th className="pb-2 font-semibold">Candidato</th>
+                        <th className="pb-2 font-semibold">Antes → Depois</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {auditLogs.map((log: any) => {
+                        const antes = log.dadosAntes ? JSON.parse(log.dadosAntes) : null;
+                        const depois = log.dadosDepois ? JSON.parse(log.dadosDepois) : null;
+                        const dt = new Date(log.createdAt);
+                        const data = dt.toLocaleDateString('pt-BR');
+                        const hora = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        return (
+                          <tr key={log.id} className="text-gray-700 align-top">
+                            <td className="py-2.5 text-xs text-gray-500 whitespace-nowrap">{data}<br />{hora}</td>
+                            <td className="py-2.5 font-medium text-xs max-w-[140px]">{log.autorNome}<br /><span className="text-gray-400 font-normal">{log.autorRole === 'admin' ? 'Administrador' : 'Comissão'}</span></td>
+                            <td className="py-2.5 text-xs max-w-[160px]">{log.acao}</td>
+                            <td className="py-2.5 text-xs text-gray-600 max-w-[150px]">{log.candidatoNome ?? '—'}</td>
+                            <td className="py-2.5 text-xs text-gray-500">
+                              {antes && depois ? (
+                                <span>{antes.status} → <strong className="text-gray-700">{depois.status}</strong></span>
+                              ) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
 
