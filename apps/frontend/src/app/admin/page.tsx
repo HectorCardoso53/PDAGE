@@ -358,7 +358,7 @@ export default function AdminPage() {
       // Atualizar HABILITACAO_DOCUMENTAL junto com a decisão da inscrição
       const habEtapa = candidato.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
       const checksJson = Object.keys(docChecks).length > 0 ? JSON.stringify(docChecks) : null;
-      const habNovoStatus = action === 'approve' ? 'EM_ANALISE' : 'REPROVADO';
+      const habNovoStatus = action === 'approve' ? 'APROVADO' : 'REPROVADO';
       if (habEtapa?.id) {
         await apiFetch(`/api/admin/etapa/${habEtapa.id}`, {
           method: 'PATCH',
