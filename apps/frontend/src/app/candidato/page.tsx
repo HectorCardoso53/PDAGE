@@ -289,12 +289,20 @@ export default function CandidatoPage() {
             const Icon = ETAPA_ICONS[etapa.tipo] ?? FileText;
             const isPendente = etapa.status === 'PENDENTE';
 
-            const cfg = {
+            const cfgBase = {
               PENDENTE:   { label: 'Aguardando habilitação', color: 'text-gray-400',  bg: 'bg-gray-50',   border: 'border-gray-100',  icon: Lock },
-              EM_ANALISE: { label: 'Em análise',          color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', icon: Clock },
-              APROVADO:   { label: 'Habilitado',           color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
-              REPROVADO:  { label: 'Inabilitado',          color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
+              EM_ANALISE: { label: 'Em análise',             color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', icon: Clock },
+              APROVADO:   { label: 'Habilitado',             color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
+              REPROVADO:  { label: 'Inabilitado',            color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
             }[etapa.status];
+
+            const cfg = (() => {
+              if (etapa.tipo === 'INSCRICAO')
+                return { ...cfgBase, label: 'Inscrito', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: CheckCircle };
+              if (etapa.tipo === 'HABILITACAO_DOCUMENTAL' && etapa.status === 'PENDENTE')
+                return { label: 'Em análise', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', icon: Clock };
+              return cfgBase;
+            })();
 
             const StatusIcon = cfg.icon;
             const isReprovado = etapa.status === 'REPROVADO';
