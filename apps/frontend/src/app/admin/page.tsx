@@ -553,16 +553,6 @@ export default function AdminPage() {
                         <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                           {cfg.label}
                         </span>
-                        <button onClick={() => {
-                          setReviewing(c);
-                          setReviewAction(null);
-                          setRejectReason('');
-                          const hab = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
-                          setDocChecks(hab?.docChecks ? JSON.parse(hab.docChecks) : {});
-                        }}
-                          className="px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 flex-shrink-0 transition-colors">
-                          Ver
-                        </button>
                         {etapa?.status === 'APROVADO' && (
                           <button onClick={() => { setSelected(c); setEditingEtapa(null); }}
                             className="px-4 py-2 rounded-lg text-xs font-bold text-white flex-shrink-0"
@@ -871,7 +861,7 @@ export default function AdminPage() {
                                 style={isEditing
                                   ? { background: '#f3f4f6', color: '#6b7280', borderColor: '#d1d5db' }
                                   : { background: '#001b3d', color: '#fff', borderColor: '#001b3d' }}>
-                                {isEditing ? 'Cancelar' : 'Editar'}
+                                {isEditing ? 'Cancelar' : 'Analisar'}
                               </button>
                             )}
                           </>
