@@ -70,6 +70,7 @@ export class AdminService {
         numero: c.numero,
         bairro: c.bairro,
         cidade: c.cidade,
+        vinculo: c.vinculo,
         cargo: c.cargo,
         escola: c.escola,
         matricula: c.matricula,
