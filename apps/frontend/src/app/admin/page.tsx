@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   LogOut, CheckCircle, Clock, XCircle,
-  FileText, Brain, GraduationCap, ClipboardList, BarChart, Award, X, UserCheck, Lock, Mail,
+  FileText, Brain, GraduationCap, ClipboardList, BarChart, Award, X, UserCheck, Lock,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 
@@ -241,12 +241,6 @@ export default function AdminPage() {
   const [novoMembroSaving, setNovoMembroSaving] = useState(false);
   const [resetSenhaId, setResetSenhaId] = useState<string | null>(null);
   const [novaSenha, setNovaSenha] = useState('');
-  const [msgModal, setMsgModal] = useState<AdminCandidato | null>(null);
-  const [msgAssunto, setMsgAssunto] = useState('');
-  const [msgTexto, setMsgTexto] = useState('');
-  const [msgSending, setMsgSending] = useState(false);
-  const [msgError, setMsgError] = useState('');
-  const [msgOk, setMsgOk] = useState(false);
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -447,30 +441,6 @@ export default function AdminPage() {
     }
   };
 
-  const openMsg = (c: AdminCandidato) => {
-    setMsgModal(c); setMsgAssunto(''); setMsgTexto(''); setMsgError(''); setMsgOk(false);
-  };
-
-  const handleEnviarMsg = async () => {
-    if (!msgAssunto.trim() || !msgTexto.trim()) { setMsgError('Preencha o assunto e a mensagem.'); return; }
-    setMsgSending(true); setMsgError('');
-    const t = localStorage.getItem('meritus_admin_token');
-    try {
-      const res = await apiFetch(`/api/admin/notificar/${msgModal!.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-        body: JSON.stringify({ assunto: msgAssunto, mensagem: msgTexto }),
-      });
-      if (!res.ok) { setMsgError('Erro ao enviar. Tente novamente.'); return; }
-      setMsgOk(true);
-      setTimeout(() => { setMsgModal(null); setMsgOk(false); setMsgAssunto(''); setMsgTexto(''); }, 1800);
-    } catch {
-      setMsgError('Erro de conexão.');
-    } finally {
-      setMsgSending(false);
-    }
-  };
-
   const maskCpf = (v: string) =>
     v.replace(/\D/g, '').slice(0, 11)
       .replace(/(\d{3})(\d)/, '$1.$2')
@@ -533,21 +503,6 @@ export default function AdminPage() {
       });
       if (res.ok) { setResetSenhaId(null); setNovaSenha(''); alert('Senha redefinida com sucesso.'); }
     } catch {}
-  };
-
-  const handleNotificarSemDocs = async () => {
-    const t = localStorage.getItem('meritus_admin_token');
-    try {
-      const res = await apiFetch('/api/admin/notificar-sem-documentos', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      const data = await res.json();
-      if (res.ok) alert(`${data.notificados} candidato(s) notificado(s) por e-mail.`);
-      else alert('Erro ao enviar notificações.');
-    } catch {
-      alert('Erro de conexão.');
-    }
   };
 
   const handleUpdatePermissao = async (id: string, permissao: string) => {
@@ -623,11 +578,6 @@ export default function AdminPage() {
                 <button onClick={() => { setShowAuditoria(true); loadAuditLogs(); }}
                   className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
                   Auditoria
-                </button>
-                <button onClick={handleNotificarSemDocs}
-                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-300 hover:text-white hover:bg-white/10 transition-colors"
-                  title="Enviar e-mail para candidatos com documentos faltando">
-                  Notificar
                 </button>
               </>
             )}
@@ -937,11 +887,6 @@ export default function AdminPage() {
                           {cfg.label}
                         </span>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <button onClick={() => openMsg(c)}
-                            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
-                            title="Enviar mensagem ao candidato">
-                            <Mail className="w-4 h-4" />
-                          </button>
                           <button onClick={() => {
                             setReviewing(c);
                             setReviewAction(null);
@@ -988,11 +933,6 @@ export default function AdminPage() {
                           {cfg.label}
                         </span>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <button onClick={() => openMsg(c)}
-                            className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
-                            title="Enviar mensagem ao candidato">
-                            <Mail className="w-4 h-4" />
-                          </button>
                           <button onClick={() => {
                             setReviewing(c);
                             setReviewAction(null);
@@ -1432,69 +1372,6 @@ export default function AdminPage() {
         </div>
       )}
       {/* Modal — Enviar mensagem ao candidato */}
-      {msgModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.55)' }}
-          onClick={e => { if (e.target === e.currentTarget && !msgSending) setMsgModal(null); }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between rounded-t-2xl">
-              <div>
-                <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Enviar mensagem</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{msgModal.nome} · {msgModal.email}</p>
-              </div>
-              <button onClick={() => setMsgModal(null)} disabled={msgSending}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <X className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              {msgOk ? (
-                <div className="flex items-center gap-3 py-6 justify-center">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                  <p className="text-sm font-semibold text-green-700">Mensagem enviada com sucesso!</p>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Assunto</label>
-                    <input
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      placeholder="Ex: Documentação pendente — Processo Seletivo"
-                      value={msgAssunto}
-                      onChange={e => setMsgAssunto(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Mensagem</label>
-                    <textarea
-                      rows={6}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      placeholder="Escreva sua mensagem aqui..."
-                      value={msgTexto}
-                      onChange={e => setMsgTexto(e.target.value)}
-                    />
-                  </div>
-                  {msgError && (
-                    <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{msgError}</p>
-                  )}
-                  <div className="flex gap-3 pt-1">
-                    <button onClick={() => setMsgModal(null)} disabled={msgSending}
-                      className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50">
-                      Cancelar
-                    </button>
-                    <button onClick={handleEnviarMsg} disabled={msgSending}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity flex items-center justify-center gap-2"
-                      style={{ background: '#001b3d' }}>
-                      <Mail className="w-4 h-4" />
-                      {msgSending ? 'Enviando…' : 'Enviar'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
