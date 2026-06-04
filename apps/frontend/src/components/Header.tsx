@@ -19,9 +19,7 @@ export default function Header() {
   const isInscricaoPage = pathname === '/inscricao';
 
   useEffect(() => {
-    const token = localStorage.getItem('meritus_token');
-    const inscrito = localStorage.getItem('pdage_inscrito');
-    setHasAccount(!!(token || inscrito));
+    setHasAccount(!!localStorage.getItem('meritus_token'));
   }, []);
 
   const handleNavClick = (href: string) => {
