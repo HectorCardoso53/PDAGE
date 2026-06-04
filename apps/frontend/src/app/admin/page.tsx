@@ -235,6 +235,12 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [showMembros, setShowMembros] = useState(false);
   const [membros, setMembros] = useState<any[]>([]);
+  const [showNovoMembro, setShowNovoMembro] = useState(false);
+  const [novoMembroForm, setNovoMembroForm] = useState({ nome: '', cpf: '', email: '', senha: '' });
+  const [novoMembroError, setNovoMembroError] = useState('');
+  const [novoMembroSaving, setNovoMembroSaving] = useState(false);
+  const [resetSenhaId, setResetSenhaId] = useState<string | null>(null);
+  const [novaSenha, setNovaSenha] = useState('');
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -435,6 +441,70 @@ export default function AdminPage() {
     }
   };
 
+  const maskCpf = (v: string) =>
+    v.replace(/\D/g, '').slice(0, 11)
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+
+  const handleCreateMembro = async () => {
+    setNovoMembroError('');
+    if (!novoMembroForm.nome || !novoMembroForm.cpf || !novoMembroForm.email || !novoMembroForm.senha) {
+      setNovoMembroError('Preencha todos os campos.'); return;
+    }
+    setNovoMembroSaving(true);
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const res = await apiFetch('/api/admin/membros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        body: JSON.stringify(novoMembroForm),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNovoMembroError(data.message ?? 'Erro ao criar membro.'); return; }
+      setMembros(prev => [...prev, data]);
+      setShowNovoMembro(false);
+      setNovoMembroForm({ nome: '', cpf: '', email: '', senha: '' });
+    } catch { setNovoMembroError('Erro de conexão.'); }
+    finally { setNovoMembroSaving(false); }
+  };
+
+  const handleToggleMembro = async (id: string) => {
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const res = await apiFetch(`/api/admin/membros/${id}/toggle`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (res.ok) { const updated = await res.json(); setMembros(prev => prev.map(m => m.id === id ? updated : m)); }
+    } catch {}
+  };
+
+  const handleDeleteMembro = async (id: string, nome: string) => {
+    if (!confirm(`Excluir o membro "${nome}" permanentemente?`)) return;
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const res = await apiFetch(`/api/admin/membros/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (res.ok) setMembros(prev => prev.filter(m => m.id !== id));
+    } catch {}
+  };
+
+  const handleResetSenha = async (id: string) => {
+    if (!novaSenha || novaSenha.length < 6) { alert('A nova senha deve ter pelo menos 6 caracteres.'); return; }
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const res = await apiFetch(`/api/admin/membros/${id}/senha`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ novaSenha }),
+      });
+      if (res.ok) { setResetSenhaId(null); setNovaSenha(''); alert('Senha redefinida com sucesso.'); }
+    } catch {}
+  };
+
   const pendingRevisao = candidatos.filter(c =>
     ['PENDENTE', 'EM_ANALISE'].includes(c.etapas.find(e => e.etapa === 'INSCRICAO')?.status ?? '')
   );
@@ -505,42 +575,151 @@ export default function AdminPage() {
       {showMembros && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 py-8 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
+
+            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Membros da Comissão</h3>
-              <button onClick={() => setShowMembros(false)} className="text-gray-400 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
+              <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Gestão de Usuários</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setShowNovoMembro(v => !v); setNovoMembroError(''); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                  style={{ background: '#001b3d' }}>
+                  {showNovoMembro ? 'Cancelar' : '+ Novo usuário'}
+                </button>
+                <button onClick={() => { setShowMembros(false); setShowNovoMembro(false); }} className="text-gray-400 hover:text-gray-700">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
+
+            {/* Formulário novo membro */}
+            {showNovoMembro && (
+              <div className="px-6 py-5 border-b border-gray-100 bg-gray-50 space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Novo usuário da comissão</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Nome completo *</label>
+                    <input
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                      placeholder="Nome completo"
+                      value={novoMembroForm.nome}
+                      onChange={e => setNovoMembroForm(f => ({ ...f, nome: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">CPF (será o login) *</label>
+                    <input
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                      placeholder="000.000.000-00"
+                      value={novoMembroForm.cpf}
+                      onChange={e => setNovoMembroForm(f => ({ ...f, cpf: maskCpf(e.target.value) }))}
+                      maxLength={14}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">E-mail *</label>
+                    <input
+                      type="email"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                      placeholder="email@exemplo.com"
+                      value={novoMembroForm.email}
+                      onChange={e => setNovoMembroForm(f => ({ ...f, email: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Senha inicial *</label>
+                    <input
+                      type="password"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                      placeholder="Mínimo 6 caracteres"
+                      value={novoMembroForm.senha}
+                      onChange={e => setNovoMembroForm(f => ({ ...f, senha: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                {novoMembroError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{novoMembroError}</p>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleCreateMembro}
+                    disabled={novoMembroSaving}
+                    className="px-5 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-60"
+                    style={{ background: '#001b3d' }}>
+                    {novoMembroSaving ? 'Criando...' : 'Criar usuário'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Tabela de membros */}
             <div className="p-6 space-y-2">
-              <p className="text-xs text-gray-400 mb-3">Senha inicial de todos os membros: <strong>Meritus@2026!</strong> — CPF como login.</p>
               {membros.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-6">Carregando...</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-xs text-gray-400 uppercase text-left border-b border-gray-100">
-                        <th className="pb-2 font-semibold">Nome</th>
-                        <th className="pb-2 font-semibold">CPF</th>
-                        <th className="pb-2 font-semibold">E-mail</th>
-                        <th className="pb-2 font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {membros.map((m: any) => (
-                        <tr key={m.id} className="text-gray-700">
-                          <td className="py-2.5 font-medium">{m.nome}</td>
-                          <td className="py-2.5 text-gray-500 font-mono text-xs">{m.cpf}</td>
-                          <td className="py-2.5 text-gray-500 text-xs truncate max-w-[160px]">{m.email}</td>
-                          <td className="py-2.5">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.ativo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                              {m.ativo ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-2">
+                  {membros.map((m: any) => (
+                    <div key={m.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-800 text-sm">{m.nome}</p>
+                          <p className="text-xs text-gray-500 font-mono mt-0.5">CPF: {m.cpf}</p>
+                          <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Toggle ativo/inativo */}
+                          <button
+                            onClick={() => handleToggleMembro(m.id)}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+                              m.ativo
+                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200'
+                            }`}
+                            title={m.ativo ? 'Clique para desativar' : 'Clique para ativar'}>
+                            {m.ativo ? 'Ativo' : 'Inativo'}
+                          </button>
+                          {/* Reset senha */}
+                          <button
+                            onClick={() => { setResetSenhaId(resetSenhaId === m.id ? null : m.id); setNovaSenha(''); }}
+                            className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors"
+                            title="Redefinir senha">
+                            🔑
+                          </button>
+                          {/* Excluir */}
+                          <button
+                            onClick={() => handleDeleteMembro(m.id, m.nome)}
+                            className="text-xs px-2.5 py-1 rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="Excluir usuário">
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Inline reset senha */}
+                      {resetSenhaId === m.id && (
+                        <div className="mt-3 flex gap-2 items-center border-t border-gray-100 pt-3">
+                          <input
+                            type="password"
+                            className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                            placeholder="Nova senha (mín. 6 caracteres)"
+                            value={novaSenha}
+                            onChange={e => setNovaSenha(e.target.value)}
+                          />
+                          <button
+                            onClick={() => handleResetSenha(m.id)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white"
+                            style={{ background: '#001b3d' }}>
+                            Salvar
+                          </button>
+                          <button
+                            onClick={() => { setResetSenhaId(null); setNovaSenha(''); }}
+                            className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-500 hover:bg-gray-100">
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

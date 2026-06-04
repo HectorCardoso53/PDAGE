@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateEtapaDto } from './dto/update-etapa.dto';
@@ -205,5 +205,41 @@ export class AdminService implements OnModuleInit {
       orderBy: { nome: 'asc' },
       select: { id: true, nome: true, cpf: true, email: true, ativo: true, createdAt: true },
     });
+  }
+
+  async createMembro(dto: { nome: string; cpf: string; email: string; senha: string }) {
+    const cpf = dto.cpf.replace(/\D/g, '');
+    const existing = await this.prisma.membroComissao.findFirst({ where: { OR: [{ cpf }, { email: dto.email }] } });
+    if (existing) throw new ConflictException('CPF ou e-mail já cadastrado.');
+    const senhaHash = await bcrypt.hash(dto.senha, 10);
+    return this.prisma.membroComissao.create({
+      data: { nome: dto.nome, cpf, email: dto.email, senhaHash, ativo: true },
+      select: { id: true, nome: true, cpf: true, email: true, ativo: true, createdAt: true },
+    });
+  }
+
+  async toggleMembro(id: string) {
+    const m = await this.prisma.membroComissao.findUnique({ where: { id } });
+    if (!m) throw new NotFoundException('Membro não encontrado.');
+    return this.prisma.membroComissao.update({
+      where: { id },
+      data: { ativo: !m.ativo },
+      select: { id: true, nome: true, cpf: true, email: true, ativo: true },
+    });
+  }
+
+  async deleteMembro(id: string) {
+    const m = await this.prisma.membroComissao.findUnique({ where: { id } });
+    if (!m) throw new NotFoundException('Membro não encontrado.');
+    await this.prisma.membroComissao.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  async resetSenhaMembro(id: string, novaSenha: string) {
+    const m = await this.prisma.membroComissao.findUnique({ where: { id } });
+    if (!m) throw new NotFoundException('Membro não encontrado.');
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    await this.prisma.membroComissao.update({ where: { id }, data: { senhaHash } });
+    return { ok: true };
   }
 }

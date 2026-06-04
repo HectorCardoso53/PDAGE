@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, Req, ForbiddenException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminGuard } from './admin.guard';
 import { UpdateEtapaDto } from './dto/update-etapa.dto';
@@ -31,5 +31,29 @@ export class AdminController {
   @Get('membros')
   listMembros() {
     return this.adminService.listMembros();
+  }
+
+  @Post('membros')
+  createMembro(@Body() dto: any, @Req() req: any) {
+    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    return this.adminService.createMembro(dto);
+  }
+
+  @Patch('membros/:id/toggle')
+  toggleMembro(@Param('id') id: string, @Req() req: any) {
+    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    return this.adminService.toggleMembro(id);
+  }
+
+  @Patch('membros/:id/senha')
+  resetSenhaMembro(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    return this.adminService.resetSenhaMembro(id, body.novaSenha);
+  }
+
+  @Delete('membros/:id')
+  deleteMembro(@Param('id') id: string, @Req() req: any) {
+    if (req.user?.role !== 'admin') throw new ForbiddenException('Acesso restrito ao administrador.');
+    return this.adminService.deleteMembro(id);
   }
 }
