@@ -349,14 +349,18 @@ export default function AdminPage() {
       });
       if (!res.ok) return;
 
-      // Salvar checks de documentos na etapa HABILITACAO_DOCUMENTAL
+      // Atualizar HABILITACAO_DOCUMENTAL junto com a decisão da inscrição
       const habEtapa = candidato.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
       const checksJson = Object.keys(docChecks).length > 0 ? JSON.stringify(docChecks) : null;
-      if (habEtapa?.id && checksJson) {
+      const habNovoStatus = action === 'approve' ? 'EM_ANALISE' : 'REPROVADO';
+      if (habEtapa?.id) {
         await apiFetch(`/api/admin/etapa/${habEtapa.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-          body: JSON.stringify({ status: habEtapa.status, docChecks: checksJson }),
+          body: JSON.stringify({
+            status: habNovoStatus,
+            ...(checksJson ? { docChecks: checksJson } : {}),
+          }),
         });
       }
 
@@ -366,8 +370,8 @@ export default function AdminPage() {
         etapas: c.etapas.map(e => {
           if (e.etapa === 'INSCRICAO')
             return { ...e, status: newStatus, observacao: action === 'reject' ? (reason ?? null) : null };
-          if (e.etapa === 'HABILITACAO_DOCUMENTAL' && checksJson)
-            return { ...e, docChecks: checksJson };
+          if (e.etapa === 'HABILITACAO_DOCUMENTAL')
+            return { ...e, status: habNovoStatus, ...(checksJson ? { docChecks: checksJson } : {}) };
           return e;
         }),
       }));
