@@ -309,8 +309,8 @@ export default function CandidatoPage() {
 
                 {/* Cabeçalho do card */}
                 <div
-                  className={`p-4 flex items-center gap-4 ${etapa.tipo !== 'HABILITACAO_DOCUMENTAL' ? 'cursor-pointer select-none' : ''}`}
-                  onClick={() => etapa.tipo !== 'HABILITACAO_DOCUMENTAL' && setExpandedEtapa(isExpanded ? null : etapa.tipo)}
+                  className="p-4 flex items-center gap-4 cursor-pointer select-none"
+                  onClick={() => setExpandedEtapa(isExpanded ? null : etapa.tipo)}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPendente ? 'bg-gray-200' : ''}`}
                     style={!isPendente ? { background: '#001b3d' } : {}}>
@@ -333,10 +333,10 @@ export default function CandidatoPage() {
                     <StatusIcon className="w-3.5 h-3.5" />
                     {cfg.label}
                   </span>
-                  {etapa.tipo !== 'HABILITACAO_DOCUMENTAL' && (isExpanded
+                  {isExpanded
                     ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  )}
+                  }
                 </div>
 
                 {/* Painel expandido */}
@@ -398,16 +398,14 @@ export default function CandidatoPage() {
                                   hasCheck && !checkVal ? 'border-red-200'   :
                                   'border-blue-100'
                                 }`}>
-                                  <a href={`${API_BASE}/api/uploads/${candidato[field]}`}
-                                    target="_blank" rel="noopener noreferrer"
-                                    className={`flex-1 flex items-center gap-2 px-3 py-2 text-xs font-medium hover:opacity-80 transition-opacity min-w-0 ${
+                                  <div className={`flex-1 flex items-center gap-2 px-3 py-2 text-xs font-medium min-w-0 ${
                                       hasCheck && checkVal  ? 'bg-green-50 text-green-700' :
                                       hasCheck && !checkVal ? 'bg-red-50 text-red-700'     :
                                       'bg-blue-50 text-blue-700'
                                     }`}>
                                     <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                                     <span className="truncate">{label}</span>
-                                  </a>
+                                  </div>
                                   {hasCheck && (
                                     <span className={`px-2.5 text-sm font-bold flex-shrink-0 ${checkVal ? 'text-green-600' : 'text-red-500'}`}>
                                       {checkVal ? '✓' : '✗'}
