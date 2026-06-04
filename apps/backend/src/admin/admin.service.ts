@@ -258,6 +258,16 @@ export class AdminService implements OnModuleInit {
     return { ok: true };
   }
 
+  async notificarCandidato(candidatoId: string, assunto: string, mensagem: string) {
+    const c = await this.prisma.candidato.findUnique({
+      where: { id: candidatoId },
+      select: { nome: true, email: true },
+    });
+    if (!c) throw new NotFoundException('Candidato não encontrado.');
+    await this.mail.enviarMensagemPersonalizada({ nome: c.nome, email: c.email, assunto, mensagem });
+    return { ok: true };
+  }
+
   async notificarSemDocumentos() {
     const DOC_FIELDS = [
       'docRg', 'docCpf', 'docResidencia', 'docTituloEleitor',

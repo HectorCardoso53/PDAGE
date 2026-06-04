@@ -63,6 +63,12 @@ export class AdminController {
     return this.adminService.deleteMembro(id);
   }
 
+  @Post('notificar/:id')
+  notificarCandidato(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
+    return this.adminService.notificarCandidato(id, body.assunto, body.mensagem);
+  }
+
   @Post('notificar-sem-documentos')
   notificarSemDocumentos(@Req() req: any) {
     if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
