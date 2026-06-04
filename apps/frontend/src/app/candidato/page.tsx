@@ -307,10 +307,10 @@ export default function CandidatoPage() {
             return (
               <div key={etapa.tipo} className={`bg-white rounded-xl border shadow-sm ${cfg.border}`}>
 
-                {/* Cabeçalho do card — sempre clicável */}
+                {/* Cabeçalho do card */}
                 <div
-                  className="p-4 flex items-center gap-4 cursor-pointer select-none"
-                  onClick={() => setExpandedEtapa(isExpanded ? null : etapa.tipo)}
+                  className={`p-4 flex items-center gap-4 ${etapa.tipo !== 'HABILITACAO_DOCUMENTAL' ? 'cursor-pointer select-none' : ''}`}
+                  onClick={() => etapa.tipo !== 'HABILITACAO_DOCUMENTAL' && setExpandedEtapa(isExpanded ? null : etapa.tipo)}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPendente ? 'bg-gray-200' : ''}`}
                     style={!isPendente ? { background: '#001b3d' } : {}}>
@@ -333,10 +333,10 @@ export default function CandidatoPage() {
                     <StatusIcon className="w-3.5 h-3.5" />
                     {cfg.label}
                   </span>
-                  {isExpanded
+                  {etapa.tipo !== 'HABILITACAO_DOCUMENTAL' && (isExpanded
                     ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  }
+                  )}
                 </div>
 
                 {/* Painel expandido */}
