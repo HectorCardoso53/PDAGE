@@ -3,6 +3,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ChevronRight, ChevronLeft, CheckCircle, Upload, User, Briefcase, FileText, Eye, EyeOff } from 'lucide-react';
@@ -200,6 +201,7 @@ const INITIAL_FORM: FormState = {
 };
 
 export default function InscricaoPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [protocolo, setProtocolo] = useState('');
@@ -369,6 +371,24 @@ export default function InscricaoPage() {
       localStorage.setItem('pdage_inscrito', '1');
       localStorage.removeItem(DRAFT_KEY);
       setProtocolo(data.protocolo ?? '');
+
+      // Auto-login após cadastro
+      try {
+        const loginRes = await apiFetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email, senha: form.senha }),
+        });
+        if (loginRes.ok) {
+          const loginData = await loginRes.json();
+          localStorage.setItem('meritus_token', loginData.access_token);
+          localStorage.setItem('meritus_candidato', JSON.stringify(loginData.candidato ?? {}));
+          setSubmitted(true);
+          setTimeout(() => router.push('/candidato'), 3000);
+          return;
+        }
+      } catch { /* silently fail — user verá tela de sucesso e poderá entrar manualmente */ }
+
       setSubmitted(true);
     } catch {
       setSubmitError('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');

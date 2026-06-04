@@ -15,11 +15,15 @@ const navLinks = [
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasAccount, setHasAccount] = useState(false);
+  const [hasRegistered, setHasRegistered] = useState(false);
   const pathname = usePathname();
   const isInscricaoPage = pathname === '/inscricao';
 
   useEffect(() => {
-    setHasAccount(!!localStorage.getItem('meritus_token'));
+    const token = !!localStorage.getItem('meritus_token');
+    const registered = !!localStorage.getItem('pdage_inscrito');
+    setHasAccount(token);
+    setHasRegistered(registered && !token);
   }, []);
 
   const handleNavClick = (href: string) => {
@@ -82,11 +86,19 @@ export default function Header() {
             <div className="flex items-center gap-3">
               {hasAccount ? (
                 <a
-                  href="/login"
+                  href="/candidato"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
                   style={{ background: '#ffd21f', color: '#001b3d' }}
                 >
                   Área do Candidato
+                </a>
+              ) : hasRegistered ? (
+                <a
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                  style={{ background: '#ffd21f', color: '#001b3d' }}
+                >
+                  Entrar na minha área
                 </a>
               ) : !isInscricaoPage ? (
                 <a
@@ -144,7 +156,7 @@ export default function Header() {
                   {link.label}
                 </motion.button>
               ))}
-              {(hasAccount || !isInscricaoPage) && (
+              {(hasAccount || hasRegistered || !isInscricaoPage) && (
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -153,11 +165,11 @@ export default function Header() {
                   style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
                 >
                   <a
-                    href={hasAccount ? '/login' : '/inscricao'}
+                    href={hasAccount ? '/candidato' : hasRegistered ? '/login' : '/inscricao'}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-bold"
                     style={{ background: '#ffd21f', color: '#001b3d' }}
                   >
-                    {hasAccount ? 'Área do Candidato' : 'Inscreva-se'}
+                    {hasAccount ? 'Área do Candidato' : hasRegistered ? 'Entrar na minha área' : 'Inscreva-se'}
                   </a>
                 </motion.div>
               )}
