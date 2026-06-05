@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   FileText, Brain, GraduationCap, ClipboardList,
   BarChart, Award, LogOut, User, CheckCircle,
-  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X, Calendar, Upload,
+  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X, Calendar, Upload, Loader2,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 import Footer from '@/components/Footer';
@@ -99,6 +99,8 @@ export default function CandidatoPage() {
   const router = useRouter();
   const dentrodoPrazo = new Date() <= PRAZO_INSCRICAO;
   const [data, setData] = useState<DashData | null>(null);
+  const singleUploadRef = useRef<HTMLInputElement>(null);
+  const singleUploadField = useRef<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedEtapa, setExpandedEtapa] = useState<string | null>('INSCRICAO');
@@ -111,6 +113,7 @@ export default function CandidatoPage() {
   const [docUploading, setDocUploading] = useState(false);
   const [docUploadError, setDocUploadError] = useState('');
   const [docUploadOk, setDocUploadOk] = useState(false);
+  const [singleUploading, setSingleUploading] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('meritus_token');
@@ -191,6 +194,34 @@ export default function CandidatoPage() {
     } finally {
       setDocUploading(false);
     }
+  };
+
+  const handleSingleDoc = (field: string) => {
+    singleUploadField.current = field;
+    singleUploadRef.current?.click();
+  };
+
+  const handleSingleDocChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const field = singleUploadField.current;
+    setSingleUploading(field);
+    const token = localStorage.getItem('meritus_token');
+    const fd = new FormData();
+    fd.append(field, file);
+    try {
+      const res = await apiFetch('/api/candidato/docs', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (!res.ok) { setSingleUploading(null); return; }
+      const updated = await res.json();
+      setData(prev => prev ? { ...prev, candidato: { ...prev.candidato, ...updated } } : null);
+      setDocUploadOk(true);
+    } catch { /* silently fail */ }
+    setSingleUploading(null);
   };
 
   const handleLogout = () => {
@@ -283,22 +314,12 @@ export default function CandidatoPage() {
                 <span className="text-gray-400">Matrícula: <span className="text-gray-700 font-medium">{candidato.matricula || '—'}</span></span>
                 <span className="text-gray-400">Município: <span className="text-gray-700 font-medium">{candidato.municipio}</span></span>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  onClick={() => openEdit(candidato)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" /> Editar dados da inscrição
-                </button>
-                {dentrodoPrazo && (
-                  <button
-                    onClick={() => { setDocModal(true); setDocUploadError(''); }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
-                  >
-                    <FileText className="w-3.5 h-3.5" /> Atualizar documentos
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => openEdit(candidato)}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Editar dados da inscrição
+              </button>
             </div>
             {inscricao && (
               <div className="hidden sm:block text-right flex-shrink-0">
@@ -522,11 +543,14 @@ export default function CandidatoPage() {
                                     </a>
                                     {dentrodoPrazo && (
                                       <button
-                                        onClick={() => { setDocModal(true); setDocUploadError(''); }}
-                                        title="Atualizar documento"
-                                        className="px-2 py-2 text-blue-500 hover:text-blue-800 hover:bg-blue-100 transition-colors flex-shrink-0 border-l border-blue-100"
+                                        onClick={() => handleSingleDoc(field as string)}
+                                        disabled={singleUploading === field}
+                                        title="Substituir documento"
+                                        className="px-2 py-2 text-blue-500 hover:text-blue-800 hover:bg-blue-100 transition-colors flex-shrink-0 border-l border-blue-100 disabled:opacity-50"
                                       >
-                                        <Upload className="w-3.5 h-3.5" />
+                                        {singleUploading === field
+                                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          : <Upload className="w-3.5 h-3.5" />}
                                       </button>
                                     )}
                                   </div>
@@ -823,6 +847,13 @@ export default function CandidatoPage() {
         </div>
       )}
 
+      <input
+        ref={singleUploadRef}
+        type="file"
+        accept=".pdf"
+        className="hidden"
+        onChange={handleSingleDocChange}
+      />
       <Footer />
     </div>
   );
