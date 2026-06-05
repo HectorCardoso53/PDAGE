@@ -731,7 +731,7 @@ export default function AdminPage() {
     <div className="min-h-screen" style={{ backgroundColor: '#f4f6f8' }}>
 
       {/* Header */}
-      <header style={{ background: '#001b3d', borderBottom: '3px solid #ffd21f' }}>
+      <header className="sticky top-0 z-40" style={{ background: '#001b3d', borderBottom: '3px solid #ffd21f' }}>
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="Meritus" width={32} height={32} className="object-contain" />
