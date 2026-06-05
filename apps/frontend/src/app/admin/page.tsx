@@ -242,6 +242,8 @@ export default function AdminPage() {
   const [novoMembroSaving, setNovoMembroSaving] = useState(false);
   const [resetSenhaId, setResetSenhaId] = useState<string | null>(null);
   const [novaSenha, setNovaSenha] = useState('');
+  const [pendingPage, setPendingPage] = useState(1);
+  const [revisadosPage, setRevisadosPage] = useState(1);
   const [locks, setLocks] = useState<Record<string, string>>({});
   const lockHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -590,12 +592,20 @@ export default function AdminPage() {
     } catch {}
   };
 
+  const PAGE_SIZE = 20;
+
   const pendingRevisao = candidatos.filter(c =>
     ['PENDENTE', 'EM_ANALISE'].includes(c.etapas.find(e => e.etapa === 'INSCRICAO')?.status ?? '')
   );
   const revisados = candidatos.filter(c =>
     ['APROVADO', 'REPROVADO'].includes(c.etapas.find(e => e.etapa === 'INSCRICAO')?.status ?? '')
   );
+
+  const pendingTotalPages = Math.max(1, Math.ceil(pendingRevisao.length / PAGE_SIZE));
+  const pendingSlice = pendingRevisao.slice((pendingPage - 1) * PAGE_SIZE, pendingPage * PAGE_SIZE);
+
+  const revisadosTotalPages = Math.max(1, Math.ceil(revisados.length / PAGE_SIZE));
+  const revisadosSlice = revisados.slice((revisadosPage - 1) * PAGE_SIZE, revisadosPage * PAGE_SIZE);
 
   const handlePrintReport = () => {
     const habilitados = candidatos
@@ -1056,7 +1066,7 @@ export default function AdminPage() {
                 <div className="py-10 text-center text-gray-400 text-sm">Nenhuma inscrição pendente.</div>
               ) : (
                 <div className="divide-y divide-gray-50">
-                  {pendingRevisao.map(c => {
+                  {pendingSlice.map(c => {
                     const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
                     const cfg = getStatusCfg(etapa?.status ?? 'PENDENTE', 'INSCRICAO');
                     return (
@@ -1095,6 +1105,23 @@ export default function AdminPage() {
                   })}
                 </div>
               )}
+              {pendingTotalPages > 1 && (
+                <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+                  <span className="text-xs text-gray-400">
+                    Página {pendingPage} de {pendingTotalPages} · {pendingRevisao.length} inscrições
+                  </span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setPendingPage(p => Math.max(1, p - 1))} disabled={pendingPage === 1}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      ← Anterior
+                    </button>
+                    <button onClick={() => setPendingPage(p => Math.min(pendingTotalPages, p + 1))} disabled={pendingPage === pendingTotalPages}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      Próxima →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Histórico */}
@@ -1107,7 +1134,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="divide-y divide-gray-50">
-                  {revisados.map(c => {
+                  {revisadosSlice.map(c => {
                     const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
                     const cfg = getStatusCfg(etapa?.status ?? 'PENDENTE', 'INSCRICAO');
                     return (
@@ -1153,6 +1180,23 @@ export default function AdminPage() {
                     );
                   })}
                 </div>
+                {revisadosTotalPages > 1 && (
+                  <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+                    <span className="text-xs text-gray-400">
+                      Página {revisadosPage} de {revisadosTotalPages} · {revisados.length} inscrições
+                    </span>
+                    <div className="flex gap-2">
+                      <button onClick={() => setRevisadosPage(p => Math.max(1, p - 1))} disabled={revisadosPage === 1}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        ← Anterior
+                      </button>
+                      <button onClick={() => setRevisadosPage(p => Math.min(revisadosTotalPages, p + 1))} disabled={revisadosPage === revisadosTotalPages}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        Próxima →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
