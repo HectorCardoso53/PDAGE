@@ -265,7 +265,7 @@ export default function InscricaoPage() {
 
   const NO_UPPER: (keyof FormState)[] = [
     'email', 'senha', 'confirmarSenha', 'cpf', 'telefone', 'cep', 'dataNasc',
-    'sexo', 'estadoCivil', 'vinculo', 'formacao', 'especializacao', 'diplomaTipo', 'municipio',
+    'sexo', 'estadoCivil', 'vinculo', 'formacao', 'especializacao', 'diplomaTipo', 'municipio', 'tempoServico',
   ];
   const set = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     const v = typeof value === 'string' && !NO_UPPER.includes(field as keyof FormState)
