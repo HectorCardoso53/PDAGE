@@ -304,7 +304,8 @@ export default function CandidatoPage() {
           const problema = data.docsComProblema ?? [];
           const faltando = DOCS_INFO.filter(({ field }) => {
             if (field === 'docReservista' && candidato.sexo !== 'Masculino') return false;
-            if (field === 'docPosGraduacao' && (!candidato.especializacao || candidato.especializacao === 'Não')) return false;
+            // docPosGraduacao é opcional para Pedagogia; só alerta se o backend detectou problema no arquivo
+            if (field === 'docPosGraduacao') return problema.includes(field as string);
             return !candidato[field] || problema.includes(field as string);
           });
           if (faltando.length === 0 || docUploadOk) return null;
