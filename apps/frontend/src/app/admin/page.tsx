@@ -606,85 +606,97 @@ export default function AdminPage() {
         return new Date(dA).getTime() - new Date(dB).getTime();
       });
 
-    const dataImpressao = new Date().toLocaleString('pt-BR');
+    const dataImpressao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const logoUrl = `${window.location.origin}/logo.png`;
 
-    const rows = habilitados.map((c, idx) => {
-      const etapaStatus = (tipo: string) => {
-        const e = c.etapas.find(et => et.etapa === tipo);
-        if (!e || e.status === 'PENDENTE') return '<span style="color:#9ca3af">—</span>';
-        const cor = e.status === 'APROVADO' ? '#15803d' : e.status === 'REPROVADO' ? '#dc2626' : '#d97706';
-        const label = e.status === 'APROVADO' ? 'Hab.' : e.status === 'REPROVADO' ? 'Inab.' : 'Análise';
-        const pts = e.pontuacao !== null ? ` (${e.pontuacao}pts)` : '';
-        return `<span style="color:${cor};font-weight:600">${label}${pts}</span>`;
-      };
-
-      return `
-        <tr style="border-bottom:1px solid #e5e7eb;${idx % 2 === 0 ? '' : 'background:#f9fafb'}">
-          <td style="padding:6px 8px;text-align:center;font-weight:700;color:#374151">${idx + 1}º</td>
-          <td style="padding:6px 8px;font-weight:600;color:#111827">${c.nome}</td>
-          <td style="padding:6px 8px;font-family:monospace;color:#6b7280">${fmtCpf(c.cpf)}</td>
-          <td style="padding:6px 8px;color:#374151">${c.cargo}</td>
-          <td style="padding:6px 8px;color:#374151">${c.escola}</td>
-          <td style="padding:6px 8px;color:#374151">${c.municipio}</td>
-          <td style="padding:6px 8px;color:#374151">${c.vinculo ?? '—'}</td>
-          <td style="padding:6px 8px;color:#374151">${c.formacao ?? '—'}</td>
-          <td style="padding:6px 8px;text-align:center">${etapaStatus('AVALIACAO_COGNITIVA')}</td>
-          <td style="padding:6px 8px;text-align:center">${etapaStatus('QUALIFICACAO_CURRICULAR')}</td>
-          <td style="padding:6px 8px;text-align:center">${etapaStatus('RESULTADO_FINAL')}</td>
-          <td style="padding:6px 8px;color:#6b7280;font-size:11px">${c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}</td>
-        </tr>`;
-    }).join('');
+    const rows = habilitados.map((c, idx) => `
+      <tr style="${idx % 2 === 1 ? 'background:#f8fafc' : ''}">
+        <td style="padding:7px 10px;text-align:center;font-weight:700;color:#001b3d;border-bottom:1px solid #e5e7eb">${idx + 1}º</td>
+        <td style="padding:7px 10px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb">${c.nome}</td>
+        <td style="padding:7px 10px;font-family:monospace;font-size:11px;color:#4b5563;border-bottom:1px solid #e5e7eb">${fmtCpf(c.cpf)}</td>
+        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.inscricao?.protocolo ?? '—'}</td>
+        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.cargo}</td>
+        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.escola}</td>
+        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.municipio}</td>
+        <td style="padding:7px 10px;text-align:center;border-bottom:1px solid #e5e7eb">
+          <span style="display:inline-block;padding:2px 10px;border-radius:20px;background:#dcfce7;color:#15803d;font-weight:700;font-size:11px">HOMOLOGADO</span>
+        </td>
+      </tr>`).join('');
 
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <title>Relação de Habilitados — Meritus</title>
+  <title>Homologação de Inscrições — Meritus</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 12px; color: #111827; background: #fff; }
-    @page { size: A4 landscape; margin: 15mm 12mm; }
-    .header { border-bottom: 3px solid #001b3d; padding-bottom: 10px; margin-bottom: 16px; }
-    .header h1 { font-size: 16px; color: #001b3d; font-weight: 800; }
-    .header p { font-size: 11px; color: #6b7280; margin-top: 2px; }
-    .meta { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 11px; color: #6b7280; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #111827; background: #fff; padding: 0; }
+    @page { size: A4 portrait; margin: 18mm 15mm; }
+    .topo { display: flex; align-items: center; justify-content: center; gap: 18px; padding-bottom: 14px; border-bottom: 3px solid #001b3d; margin-bottom: 18px; }
+    .topo img { width: 64px; height: 64px; object-fit: contain; }
+    .topo-texto { text-align: center; }
+    .topo-texto .prefeitura { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+    .topo-texto .titulo { font-size: 18px; font-weight: 800; color: #001b3d; line-height: 1.1; margin: 3px 0; }
+    .topo-texto .subtitulo { font-size: 11px; color: #374151; }
+    .secao-titulo { text-align: center; margin-bottom: 14px; }
+    .secao-titulo h2 { font-size: 13px; font-weight: 800; color: #001b3d; text-transform: uppercase; letter-spacing: 0.08em; border: 2px solid #001b3d; display: inline-block; padding: 4px 18px; }
+    .secao-titulo p { font-size: 11px; color: #6b7280; margin-top: 6px; }
     table { width: 100%; border-collapse: collapse; }
-    thead tr { background: #001b3d; color: #fff; }
-    thead th { padding: 7px 8px; text-align: left; font-size: 11px; font-weight: 700; white-space: nowrap; }
-    thead th:first-child { text-align: center; }
-    tbody td { font-size: 11px; vertical-align: middle; }
-    .footer { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 10px; color: #9ca3af; text-align: center; }
+    thead tr { background: #001b3d; }
+    thead th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; }
+    thead th:first-child, thead th:last-child { text-align: center; }
+    tbody td { font-size: 11.5px; vertical-align: middle; }
+    .rodape { margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
+    .rodape-assinatura { display: flex; justify-content: center; margin-top: 32px; }
+    .assinatura-bloco { text-align: center; width: 260px; }
+    .assinatura-bloco .linha { border-top: 1px solid #374151; padding-top: 6px; font-size: 11px; color: #374151; font-weight: 600; }
+    .assinatura-bloco .cargo { font-size: 10px; color: #6b7280; }
+    .rodape-info { text-align: center; font-size: 10px; color: #9ca3af; margin-top: 16px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Meritus — Processo Seletivo para Gestor Escolar</h1>
-    <p>Prefeitura Municipal de Óbidos, PA · Relação de Candidatos Habilitados</p>
+  <div class="topo">
+    <img src="${logoUrl}" alt="Logo Prefeitura" onerror="this.style.display='none'"/>
+    <div class="topo-texto">
+      <div class="prefeitura">Prefeitura Municipal de Óbidos — Estado do Pará</div>
+      <div class="titulo">Meritus</div>
+      <div class="subtitulo">Processo Seletivo para Gestor Escolar · 2026</div>
+    </div>
   </div>
-  <div class="meta">
-    <span>Total de habilitados: <strong style="color:#001b3d">${habilitados.length}</strong></span>
-    <span>Gerado em: ${dataImpressao}</span>
+
+  <div class="secao-titulo">
+    <h2>Homologação de Inscrições</h2>
+    <p>Relação de candidatos com inscrição homologada · Total: <strong>${habilitados.length}</strong> candidato(s)</p>
   </div>
+
   <table>
     <thead>
       <tr>
-        <th style="width:32px">Nº</th>
-        <th>Nome</th>
+        <th style="width:30px">Nº</th>
+        <th>Nome Completo</th>
         <th>CPF</th>
+        <th>Protocolo</th>
         <th>Cargo</th>
         <th>Escola</th>
         <th>Município</th>
-        <th>Vínculo</th>
-        <th>Formação</th>
-        <th style="text-align:center">Aval. Cognitiva</th>
-        <th style="text-align:center">Qualif. Curricular</th>
-        <th style="text-align:center">Resultado Final</th>
-        <th>Inscrição</th>
+        <th style="text-align:center">Situação</th>
       </tr>
     </thead>
-    <tbody>${rows || '<tr><td colspan="12" style="text-align:center;padding:20px;color:#9ca3af">Nenhum candidato habilitado encontrado.</td></tr>'}</tbody>
+    <tbody>
+      ${rows || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#9ca3af">Nenhuma inscrição homologada.</td></tr>'}
+    </tbody>
   </table>
-  <div class="footer">Documento gerado automaticamente pelo sistema Meritus · ${dataImpressao}</div>
+
+  <div class="rodape">
+    <div class="rodape-assinatura">
+      <div class="assinatura-bloco">
+        <div class="linha">Secretaria Municipal de Educação</div>
+        <div class="cargo">Óbidos, ${dataImpressao}</div>
+      </div>
+    </div>
+    <div class="rodape-info">Documento gerado pelo sistema Meritus · ${new Date().toLocaleString('pt-BR')}</div>
+  </div>
+
   <script>window.onload = function(){ window.print(); }<\/script>
 </body>
 </html>`;
