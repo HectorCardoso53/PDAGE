@@ -1087,7 +1087,7 @@ export default function AdminPage() {
                             onClick={() => openReview(c)}
                             className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-opacity ${locks[c.id] ? 'opacity-60' : ''}`}
                             style={{ background: locks[c.id] ? '#92400e' : '#001b3d' }}>
-                            {locks[c.id] ? 'Em revisão…' : 'Revisar'}
+                            {locks[c.id] ? 'Em revisão…' : 'Analisar'}
                           </button>
                         </div>
                       </div>
@@ -1168,7 +1168,7 @@ export default function AdminPage() {
             {/* Header */}
             <div className="px-6 py-5 flex items-start justify-between sticky top-0 bg-white border-b border-gray-100 z-10 rounded-t-2xl">
               <div>
-                <h3 className="text-lg font-bold" style={{ color: '#001b3d' }}>Revisar Inscrição</h3>
+                <h3 className="text-lg font-bold" style={{ color: '#001b3d' }}>Analisar Inscrição</h3>
                 <p className="text-sm text-gray-500">{reviewing.nome} · {fmtCpf(reviewing.cpf)}</p>
               </div>
               <button onClick={() => closeReview(reviewing.id)}
@@ -1223,9 +1223,8 @@ export default function AdminPage() {
                               </svg>
                               <span className="truncate">{label}</span>
                               {candidatoAtualizou && (
-                                <span title={`Atualizado em ${new Date(reviewing.updatedAt).toLocaleString('pt-BR')}`}
-                                  className="flex-shrink-0 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-white font-bold text-[9px] leading-none">
-                                  !
+                                <span className="flex-shrink-0 text-[9px] font-semibold text-amber-600 whitespace-nowrap">
+                                  · Atualizado em {new Date(reviewing.updatedAt).toLocaleString('pt-BR')}
                                 </span>
                               )}
                             </a>
