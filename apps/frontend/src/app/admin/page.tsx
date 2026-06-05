@@ -1041,10 +1041,10 @@ export default function AdminPage() {
 
             {/* Pendentes */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-blue-100 flex items-center justify-between" style={{ background: '#001b3d' }}>
                 <div>
-                  <h2 className="text-base font-bold" style={{ color: '#001b3d' }}>Aguardando Revisão</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Inscrições pendentes de validação</p>
+                  <h2 className="text-lg font-extrabold text-white tracking-wide">Aguardando Análise</h2>
+                  <p className="text-xs text-blue-200 mt-0.5">Inscrições pendentes de validação</p>
                 </div>
                 {pendingRevisao.length > 0 && (
                   <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
