@@ -597,6 +597,102 @@ export default function AdminPage() {
     ['APROVADO', 'REPROVADO'].includes(c.etapas.find(e => e.etapa === 'INSCRICAO')?.status ?? '')
   );
 
+  const handlePrintReport = () => {
+    const habilitados = candidatos
+      .filter(c => c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'APROVADO')
+      .sort((a, b) => {
+        const dA = a.inscricao?.createdAt ?? a.createdAt;
+        const dB = b.inscricao?.createdAt ?? b.createdAt;
+        return new Date(dA).getTime() - new Date(dB).getTime();
+      });
+
+    const dataImpressao = new Date().toLocaleString('pt-BR');
+
+    const rows = habilitados.map((c, idx) => {
+      const etapaStatus = (tipo: string) => {
+        const e = c.etapas.find(et => et.etapa === tipo);
+        if (!e || e.status === 'PENDENTE') return '<span style="color:#9ca3af">—</span>';
+        const cor = e.status === 'APROVADO' ? '#15803d' : e.status === 'REPROVADO' ? '#dc2626' : '#d97706';
+        const label = e.status === 'APROVADO' ? 'Hab.' : e.status === 'REPROVADO' ? 'Inab.' : 'Análise';
+        const pts = e.pontuacao !== null ? ` (${e.pontuacao}pts)` : '';
+        return `<span style="color:${cor};font-weight:600">${label}${pts}</span>`;
+      };
+
+      return `
+        <tr style="border-bottom:1px solid #e5e7eb;${idx % 2 === 0 ? '' : 'background:#f9fafb'}">
+          <td style="padding:6px 8px;text-align:center;font-weight:700;color:#374151">${idx + 1}º</td>
+          <td style="padding:6px 8px;font-weight:600;color:#111827">${c.nome}</td>
+          <td style="padding:6px 8px;font-family:monospace;color:#6b7280">${fmtCpf(c.cpf)}</td>
+          <td style="padding:6px 8px;color:#374151">${c.cargo}</td>
+          <td style="padding:6px 8px;color:#374151">${c.escola}</td>
+          <td style="padding:6px 8px;color:#374151">${c.municipio}</td>
+          <td style="padding:6px 8px;color:#374151">${c.vinculo ?? '—'}</td>
+          <td style="padding:6px 8px;color:#374151">${c.formacao ?? '—'}</td>
+          <td style="padding:6px 8px;text-align:center">${etapaStatus('AVALIACAO_COGNITIVA')}</td>
+          <td style="padding:6px 8px;text-align:center">${etapaStatus('QUALIFICACAO_CURRICULAR')}</td>
+          <td style="padding:6px 8px;text-align:center">${etapaStatus('RESULTADO_FINAL')}</td>
+          <td style="padding:6px 8px;color:#6b7280;font-size:11px">${c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}</td>
+        </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Relação de Habilitados — Meritus</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #111827; background: #fff; }
+    @page { size: A4 landscape; margin: 15mm 12mm; }
+    .header { border-bottom: 3px solid #001b3d; padding-bottom: 10px; margin-bottom: 16px; }
+    .header h1 { font-size: 16px; color: #001b3d; font-weight: 800; }
+    .header p { font-size: 11px; color: #6b7280; margin-top: 2px; }
+    .meta { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 11px; color: #6b7280; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #001b3d; color: #fff; }
+    thead th { padding: 7px 8px; text-align: left; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    thead th:first-child { text-align: center; }
+    tbody td { font-size: 11px; vertical-align: middle; }
+    .footer { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 10px; color: #9ca3af; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Meritus — Processo Seletivo para Gestor Escolar</h1>
+    <p>Prefeitura Municipal de Óbidos, PA · Relação de Candidatos Habilitados</p>
+  </div>
+  <div class="meta">
+    <span>Total de habilitados: <strong style="color:#001b3d">${habilitados.length}</strong></span>
+    <span>Gerado em: ${dataImpressao}</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:32px">Nº</th>
+        <th>Nome</th>
+        <th>CPF</th>
+        <th>Cargo</th>
+        <th>Escola</th>
+        <th>Município</th>
+        <th>Vínculo</th>
+        <th>Formação</th>
+        <th style="text-align:center">Aval. Cognitiva</th>
+        <th style="text-align:center">Qualif. Curricular</th>
+        <th style="text-align:center">Resultado Final</th>
+        <th>Inscrição</th>
+      </tr>
+    </thead>
+    <tbody>${rows || '<tr><td colspan="12" style="text-align:center;padding:20px;color:#9ca3af">Nenhum candidato habilitado encontrado.</td></tr>'}</tbody>
+  </table>
+  <div class="footer">Documento gerado automaticamente pelo sistema Meritus · ${dataImpressao}</div>
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  };
+
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f4f6f8' }}>
@@ -642,6 +738,10 @@ export default function AdminPage() {
                 )}
               </div>
             )}
+            <button onClick={handlePrintReport}
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+              Relatório
+            </button>
             {(currentUser?.role === 'admin' || (currentUser?.role === 'comissao' && currentUser?.permissao === 'MASTER')) && (
               <>
                 <button onClick={() => { setShowMembros(true); loadMembros(); }}
