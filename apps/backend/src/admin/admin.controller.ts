@@ -23,6 +23,26 @@ export class AdminController {
     return this.adminService.deleteCandidato(id);
   }
 
+  @Get('locks')
+  getLocks() {
+    return this.adminService.getLocks();
+  }
+
+  @Post('candidato/:id/lock')
+  acquireLock(@Param('id') id: string, @Req() req: any) {
+    return this.adminService.acquireLock(id, req.user);
+  }
+
+  @Delete('candidato/:id/lock')
+  releaseLock(@Param('id') id: string, @Req() req: any) {
+    return this.adminService.releaseLock(id, req.user.sub);
+  }
+
+  @Patch('candidato/:id/lock')
+  refreshLock(@Param('id') id: string, @Req() req: any) {
+    return this.adminService.refreshLock(id, req.user.sub);
+  }
+
   @Get('audit-logs')
   getAuditLogs() {
     return this.adminService.getAuditLogs();

@@ -35,9 +35,48 @@ const MEMBROS_COMISSAO = [
   { nome: 'Kátia Cristina do Rosário Lopes',  cpf: '00936298260', email: 'katia.cristina000@gmail.com' },
 ];
 
+type ReviewLock = { nome: string; sub: string; lockedAt: Date };
+const LOCK_TTL_MS = 10 * 60 * 1000; // 10 min
+
 @Injectable()
 export class AdminService implements OnModuleInit {
+  private reviewLocks = new Map<string, ReviewLock>();
+
   constructor(private prisma: PrismaService, private mail: MailService) {}
+
+  private isLockExpired(lock: ReviewLock): boolean {
+    return Date.now() - lock.lockedAt.getTime() > LOCK_TTL_MS;
+  }
+
+  acquireLock(candidatoId: string, user: { sub: string; nome: string }): { ok: boolean; lockedBy?: string } {
+    const existing = this.reviewLocks.get(candidatoId);
+    if (existing && !this.isLockExpired(existing) && existing.sub !== user.sub) {
+      return { ok: false, lockedBy: existing.nome };
+    }
+    this.reviewLocks.set(candidatoId, { nome: user.nome, sub: user.sub, lockedAt: new Date() });
+    return { ok: true };
+  }
+
+  releaseLock(candidatoId: string, userSub: string) {
+    const existing = this.reviewLocks.get(candidatoId);
+    if (existing?.sub === userSub) this.reviewLocks.delete(candidatoId);
+    return { ok: true };
+  }
+
+  refreshLock(candidatoId: string, userSub: string) {
+    const existing = this.reviewLocks.get(candidatoId);
+    if (existing?.sub === userSub) existing.lockedAt = new Date();
+    return { ok: true };
+  }
+
+  getLocks(): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [id, lock] of this.reviewLocks) {
+      if (this.isLockExpired(lock)) { this.reviewLocks.delete(id); continue; }
+      result[id] = lock.nome;
+    }
+    return result;
+  }
 
   async onModuleInit() {
     try {

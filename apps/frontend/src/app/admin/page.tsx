@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -242,6 +242,8 @@ export default function AdminPage() {
   const [novoMembroSaving, setNovoMembroSaving] = useState(false);
   const [resetSenhaId, setResetSenhaId] = useState<string | null>(null);
   const [novaSenha, setNovaSenha] = useState('');
+  const [locks, setLocks] = useState<Record<string, string>>({});
+  const lockHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -266,6 +268,15 @@ export default function AdminPage() {
       return next;
     });
   };
+
+  const fetchLocks = useCallback(async () => {
+    const t = localStorage.getItem('meritus_admin_token');
+    if (!t) return;
+    try {
+      const res = await apiFetch('/api/admin/locks', { headers: { Authorization: `Bearer ${t}` } });
+      if (res.ok) setLocks(await res.json());
+    } catch { /* silencioso */ }
+  }, []);
 
   const load = useCallback(async () => {
     const t = localStorage.getItem('meritus_admin_token');
@@ -304,7 +315,70 @@ export default function AdminPage() {
     } catch { /* silencioso */ }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    fetchLocks();
+    const interval = setInterval(fetchLocks, 20_000);
+    return () => clearInterval(interval);
+  }, [load, fetchLocks]);
+
+  const openReview = useCallback(async (c: AdminCandidato, force = false) => {
+    const t = localStorage.getItem('meritus_admin_token');
+    if (!t) return;
+    if (!force) {
+      try {
+        const res = await apiFetch(`/api/admin/candidato/${c.id}/lock`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${t}` },
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          if (!confirm(`${data.lockedBy} está analisando este candidato agora.\n\nDeseja abrir mesmo assim?`)) return;
+          // force-override: acquire again
+          await apiFetch(`/api/admin/candidato/${c.id}/lock`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${t}` },
+          });
+        }
+      } catch { /* ignora */ }
+    }
+    setReviewing(c);
+    setReviewAction(null);
+    setRejectReason('');
+    const hab = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
+    setDocChecks(hab?.docChecks ? JSON.parse(hab.docChecks) : {});
+    setLocks(prev => {
+      const next = { ...prev };
+      delete next[c.id];
+      return next;
+    });
+    if (lockHeartbeatRef.current) clearInterval(lockHeartbeatRef.current);
+    lockHeartbeatRef.current = setInterval(async () => {
+      const tk = localStorage.getItem('meritus_admin_token');
+      if (!tk) return;
+      await apiFetch(`/api/admin/candidato/${c.id}/lock`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${tk}` },
+      });
+    }, 3 * 60 * 1000);
+  }, []);
+
+  const closeReview = useCallback(async (candidatoId?: string) => {
+    if (lockHeartbeatRef.current) { clearInterval(lockHeartbeatRef.current); lockHeartbeatRef.current = null; }
+    if (candidatoId) {
+      const t = localStorage.getItem('meritus_admin_token');
+      if (t) {
+        apiFetch(`/api/admin/candidato/${candidatoId}/lock`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${t}` },
+        }).catch(() => {});
+      }
+    }
+    setReviewing(null);
+    setReviewAction(null);
+    setRejectReason('');
+    fetchLocks();
+  }, [fetchLocks]);
 
   const handleLogout = () => {
     localStorage.removeItem('meritus_admin_token');
@@ -417,9 +491,7 @@ export default function AdminPage() {
           return e;
         }),
       }));
-      setReviewing(null);
-      setRejectReason('');
-      setReviewAction(null);
+      closeReview(candidato.id);
     } finally {
       setReviewSaving(false);
     }
@@ -888,21 +960,22 @@ export default function AdminPage() {
                               <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
                             </p>
                           )}
+                          {locks[c.id] && (
+                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
+                              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
+                              Em revisão por {locks[c.id]}
+                            </p>
+                          )}
                         </div>
                         <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                           {cfg.label}
                         </span>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <button onClick={() => {
-                            setReviewing(c);
-                            setReviewAction(null);
-                            setRejectReason('');
-                            const hab = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
-                            setDocChecks(hab?.docChecks ? JSON.parse(hab.docChecks) : {});
-                          }}
-                            className="px-4 py-2 rounded-lg text-xs font-bold text-white"
-                            style={{ background: '#001b3d' }}>
-                            Revisar
+                          <button
+                            onClick={() => openReview(c)}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-opacity ${locks[c.id] ? 'opacity-60' : ''}`}
+                            style={{ background: locks[c.id] ? '#92400e' : '#001b3d' }}>
+                            {locks[c.id] ? 'Em revisão…' : 'Revisar'}
                           </button>
                         </div>
                       </div>
@@ -936,6 +1009,12 @@ export default function AdminPage() {
                               <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
                             </p>
                           )}
+                          {locks[c.id] && (
+                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
+                              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
+                              Em revisão por {locks[c.id]}
+                            </p>
+                          )}
                           {etapa?.observacao && (
                             <p className="text-xs text-gray-400 mt-0.5 italic">"{etapa.observacao}"</p>
                           )}
@@ -944,13 +1023,7 @@ export default function AdminPage() {
                           {cfg.label}
                         </span>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <button onClick={() => {
-                            setReviewing(c);
-                            setReviewAction(null);
-                            setRejectReason('');
-                            const hab = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
-                            setDocChecks(hab?.docChecks ? JSON.parse(hab.docChecks) : {});
-                          }}
+                          <button onClick={() => openReview(c)}
                             className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
                             Reanalisar
                           </button>
@@ -977,7 +1050,7 @@ export default function AdminPage() {
       {reviewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.55)' }}
-          onClick={e => { if (e.target === e.currentTarget) { setReviewing(null); setReviewAction(null); setRejectReason(''); } }}>
+          onClick={e => { if (e.target === e.currentTarget) closeReview(reviewing.id); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
 
             {/* Header */}
@@ -986,22 +1059,12 @@ export default function AdminPage() {
                 <h3 className="text-lg font-bold" style={{ color: '#001b3d' }}>Revisar Inscrição</h3>
                 <p className="text-sm text-gray-500">{reviewing.nome} · {fmtCpf(reviewing.cpf)}</p>
               </div>
-              <button onClick={() => { setReviewing(null); setReviewAction(null); setRejectReason(''); }}
+              <button onClick={() => closeReview(reviewing.id)}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
 
-            {/* Alerta de atualização de dados */}
-            {new Date(reviewing.updatedAt).getTime() - new Date(reviewing.createdAt).getTime() > 2 * 60 * 1000 && (
-              <div className="mx-6 mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-white font-bold text-sm">!</span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-amber-800">Candidato atualizou os dados após inscrição</p>
-                  <p className="text-xs text-amber-700">{new Date(reviewing.updatedAt).toLocaleString('pt-BR')}</p>
-                </div>
-              </div>
-            )}
 
             {/* Dados */}
             <div className="px-6 py-4 space-y-4">
@@ -1025,6 +1088,7 @@ export default function AdminPage() {
                   .filter(({ field }) => docChecks[field as string] === false)
                   .map(({ label }) => label);
 
+                const candidatoAtualizou = new Date(reviewing.updatedAt).getTime() - new Date(reviewing.createdAt).getTime() > 2 * 60 * 1000;
                 return (
                   <div>
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -1046,6 +1110,12 @@ export default function AdminPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
                               <span className="truncate">{label}</span>
+                              {candidatoAtualizou && (
+                                <span title={`Atualizado em ${new Date(reviewing.updatedAt).toLocaleString('pt-BR')}`}
+                                  className="flex-shrink-0 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center text-white font-bold text-[9px] leading-none">
+                                  !
+                                </span>
+                              )}
                             </a>
                             <div className="flex gap-1 pr-2 flex-shrink-0">
                               <button
