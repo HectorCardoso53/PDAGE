@@ -263,8 +263,13 @@ export default function InscricaoPage() {
     setPendingDraft(null);
   };
 
-  const set = <K extends keyof FormState>(field: K, value: FormState[K]) =>
-    setForm(f => ({ ...f, [field]: value }));
+  const NO_UPPER: (keyof FormState)[] = ['email', 'senha', 'confirmarSenha', 'cpf', 'telefone', 'cep', 'dataNasc'];
+  const set = <K extends keyof FormState>(field: K, value: FormState[K]) => {
+    const v = typeof value === 'string' && !NO_UPPER.includes(field as keyof FormState)
+      ? (value as string).toUpperCase() as FormState[K]
+      : value;
+    setForm(f => ({ ...f, [field]: v }));
+  };
 
   const handleFile = (field: keyof FormState, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -298,7 +303,7 @@ export default function InscricaoPage() {
     if (form.diplomaTipo === 'outras' && !form.docDiplomaOutras)
       return 'Envie o Diploma de Licenciatura Plena em outras áreas (item g).';
     if (form.diplomaTipo === 'outras' && form.especializacao !== 'Não' && !form.docPosGraduacao)
-      return 'Envie o Certificado de Pós-graduação em Administração ou Gestão Escolar (item h — obrigatório para licenciados em outras áreas).';
+      return 'Envie o Certificado de Especialização em Gestão Escolar ou áreas correlatas (item h).';
     if (!form.docLotacao) return 'Envie o Comprovante de Lotação Escolar (item i).';
     return '';
   };
@@ -726,7 +731,7 @@ export default function InscricaoPage() {
                 <div className={fieldsetClass}>
                   <div>
                     <label className={labelClass}>RG ou CNH *</label>
-                    <input required className={inputClass} value={form.rg} onChange={e => set('rg', mask.rgCnh(e.target.value))} placeholder="Número do documento" maxLength={15} />
+                    <input required inputMode="numeric" className={inputClass} value={form.rg} onChange={e => set('rg', mask.numeric(e.target.value).slice(0, 15))} placeholder="Somente números" maxLength={15} />
                   </div>
                   <div>
                     <label className={labelClass}>Órgão Emissor *</label>
@@ -943,7 +948,7 @@ export default function InscricaoPage() {
                     <option>Mais de 15 anos</option>
                   </select>
                 </div>
-                <div className={fieldsetClass}>
+                <div className={fieldsetClass + ' items-end'}>
                   <div>
                     <label className={labelClass}>Formação Acadêmica *</label>
                     <select required className={inputClass} value={form.formacao} onChange={e => set('formacao', e.target.value)}>
@@ -956,7 +961,7 @@ export default function InscricaoPage() {
                     </select>
                   </div>
                   <div>
-                    <label className={labelClass}>Especialização em Gestão Escolar *</label>
+                    <label className={labelClass}>Especialização em Gestão Escolar ou áreas correlatas *</label>
                     <select required className={inputClass} value={form.especializacao} onChange={e => set('especializacao', e.target.value)}>
                       <option value="">Selecione</option>
                       <option>Sim</option>
@@ -1032,7 +1037,7 @@ export default function InscricaoPage() {
                         <FileCard
                           field="docPosGraduacao"
                           tag="h"
-                          label="Certificado de Pós-graduação em Administração ou Gestão Escolar"
+                          label="Certificado de Especialização em Gestão Escolar ou áreas correlatas"
                           hint="Carga horária mínima de 360 horas"
                           optional
                         />
@@ -1066,7 +1071,7 @@ export default function InscricaoPage() {
                         <FileCard
                           field="docPosGraduacao"
                           tag="h"
-                          label="Certificado de Pós-graduação em Administração ou Gestão Escolar"
+                          label="Certificado de Especialização em Gestão Escolar ou áreas correlatas"
                           hint="Carga horária mínima de 360 horas — obrigatório para licenciados em outras áreas"
                         />
                       )}
@@ -1140,7 +1145,7 @@ export default function InscricaoPage() {
                       ...(form.sexo === 'Masculino' ? [{ label: 'Carteira de Reservista', file: form.docReservista }] : []),
                       ...(form.diplomaTipo === 'pedagogia' ? [{ label: 'Diploma de Licenciatura Plena em Pedagogia', file: form.docDiplomaPedagogia }] : []),
                       ...(form.diplomaTipo === 'outras' ? [{ label: 'Diploma de Licenciatura Plena em outras áreas', file: form.docDiplomaOutras }] : []),
-                      ...(form.especializacao !== 'Não' ? [{ label: 'Certificado de Pós-graduação em Administração ou Gestão Escolar', file: form.docPosGraduacao }] : []),
+                      ...(form.especializacao !== 'Não' && (form.diplomaTipo === 'outras' || form.docPosGraduacao !== null) ? [{ label: 'Certificado de Especialização em Gestão Escolar ou áreas correlatas', file: form.docPosGraduacao }] : []),
                       { label: 'Comprovante de Lotação Escolar', file: form.docLotacao },
                     ].map(({ label, file }) => {
                       const nameWithoutExt = file ? file.name.replace(/\.pdf$/i, '') : '';
