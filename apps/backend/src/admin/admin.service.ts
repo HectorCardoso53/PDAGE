@@ -110,6 +110,7 @@ export class AdminService implements OnModuleInit {
         formacao: c.formacao,
         especializacao: c.especializacao,
         createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
         docRg:            c.docRg,
         docCpf:           c.docCpf,
         docResidencia:    c.docResidencia,

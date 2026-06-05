@@ -63,6 +63,7 @@ type AdminCandidato = {
   formacao: string | null;
   especializacao: string | null;
   createdAt: string;
+  updatedAt: string;
   docRg: string | null;
   docCpf: string | null;
   docResidencia: string | null;
@@ -882,6 +883,11 @@ export default function AdminPage() {
                           <p className="text-xs text-gray-400 mt-0.5">
                             Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
                           </p>
+                          {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
+                            <p className="text-xs font-semibold text-amber-600 mt-0.5">
+                              ● Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
+                            </p>
+                          )}
                         </div>
                         <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                           {cfg.label}
@@ -925,6 +931,11 @@ export default function AdminPage() {
                           <p className="text-xs text-gray-400 mt-0.5">
                             Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
                           </p>
+                          {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
+                            <p className="text-xs font-semibold text-amber-600 mt-0.5">
+                              ● Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
+                            </p>
+                          )}
                           {etapa?.observacao && (
                             <p className="text-xs text-gray-400 mt-0.5 italic">"{etapa.observacao}"</p>
                           )}
