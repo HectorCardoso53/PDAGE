@@ -992,6 +992,17 @@ export default function AdminPage() {
               </button>
             </div>
 
+            {/* Alerta de atualização de dados */}
+            {new Date(reviewing.updatedAt).getTime() - new Date(reviewing.createdAt).getTime() > 2 * 60 * 1000 && (
+              <div className="mx-6 mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center text-white font-bold text-sm">!</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-amber-800">Candidato atualizou os dados após inscrição</p>
+                  <p className="text-xs text-amber-700">{new Date(reviewing.updatedAt).toLocaleString('pt-BR')}</p>
+                </div>
+              </div>
+            )}
+
             {/* Dados */}
             <div className="px-6 py-4 space-y-4">
 
