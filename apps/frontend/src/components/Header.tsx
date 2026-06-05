@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
@@ -14,17 +14,16 @@ const navLinks = [
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hasAccount, setHasAccount] = useState(false);
   const pathname = usePathname();
-  const isInscricaoPage = pathname === '/inscricao';
-
-  useEffect(() => {
-    setHasAccount(!!localStorage.getItem('meritus_token'));
-  }, []);
+  const router = useRouter();
 
   const handleNavClick = (href: string) => {
     setIsMobileMenuOpen(false);
     const id = href.replace('#', '');
+    if (pathname !== '/') {
+      router.push(`/${href}`);
+      return;
+    }
     const el = document.getElementById(id);
     if (el) {
       const top = el.getBoundingClientRect().top + window.scrollY - 80;
@@ -65,48 +64,19 @@ export default function Header() {
               </div>
             </a>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => (
-                <button
-                  key={link.href}
-                  onClick={() => handleNavClick(link.href)}
-                  className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-white/80 hover:text-white hover:bg-white/10"
-                >
-                  {link.label}
-                </button>
-              ))}
-            </nav>
-
-            {/* CTA + Mobile Toggle */}
+            {/* Desktop Navigation + Mobile Toggle */}
             <div className="flex items-center gap-2">
-              {hasAccount ? (
-                <a
-                  href="/candidato"
-                  className="hidden sm:inline-flex items-center px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
-                  style={{ background: '#ffd21f', color: '#001b3d' }}
-                >
-                  Área do Candidato
-                </a>
-              ) : (
-                <>
-                  <a
-                    href="/login"
-                    className="hidden sm:inline-flex items-center px-3 py-2 rounded-full text-xs font-medium text-white/80 hover:text-white border border-white/25 hover:border-white/50 transition-all"
+              <nav className="hidden lg:flex items-center gap-1">
+                {navLinks.map((link) => (
+                  <button
+                    key={link.href}
+                    onClick={() => handleNavClick(link.href)}
+                    className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-white/80 hover:text-white hover:bg-white/10"
                   >
-                    Já inscrito? Entre aqui
-                  </a>
-                  {!isInscricaoPage && (
-                    <a
-                      href="/inscricao"
-                      className="hidden sm:inline-flex items-center px-4 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90"
-                      style={{ background: '#ffd21f', color: '#001b3d' }}
-                    >
-                      Inscreva-se
-                    </a>
-                  )}
-                </>
-              )}
+                    {link.label}
+                  </button>
+                ))}
+              </nav>
 
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -154,41 +124,6 @@ export default function Header() {
                   {link.label}
                 </motion.button>
               ))}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: navLinks.length * 0.05, duration: 0.2 }}
-                className="mt-2 pt-2 flex flex-col gap-2"
-                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                {hasAccount ? (
-                  <a
-                    href="/candidato"
-                    className="w-full flex items-center justify-center px-4 py-3 rounded-full text-sm font-bold"
-                    style={{ background: '#ffd21f', color: '#001b3d' }}
-                  >
-                    Área do Candidato
-                  </a>
-                ) : (
-                  <>
-                    <a
-                      href="/login"
-                      className="w-full flex items-center justify-center px-4 py-3 rounded-full text-sm font-medium text-white border border-white/30"
-                    >
-                      Já inscrito? Entre aqui
-                    </a>
-                    {!isInscricaoPage && (
-                      <a
-                        href="/inscricao"
-                        className="w-full flex items-center justify-center px-4 py-3 rounded-full text-sm font-bold"
-                        style={{ background: '#ffd21f', color: '#001b3d' }}
-                      >
-                        Inscreva-se
-                      </a>
-                    )}
-                  </>
-                )}
-              </motion.div>
             </nav>
           </motion.div>
         )}

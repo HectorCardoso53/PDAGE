@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowDown, FileText, ChevronRight } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import Image from 'next/image';
 
 const fadeUp = {
@@ -14,14 +14,6 @@ const fadeUp = {
 };
 
 export default function Hero() {
-  const handleScroll = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top, behavior: 'smooth' });
-    }
-  };
-
   return (
     <section
       id="inicio"
@@ -75,28 +67,21 @@ export default function Hero() {
           variants={fadeUp}
           initial="hidden"
           animate="visible"
-          className="flex flex-col sm:flex-row gap-3 justify-start mb-12"
+          className="flex flex-col sm:flex-row gap-3"
         >
-          <button
-            onClick={() => handleScroll('sobre')}
-            className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-white transition-all duration-200 shadow-md hover:shadow-lg"
-            style={{ background: '#001b3d' }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#002654')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#001b3d')}
+          <a
+            href="/inscricao"
+            className="flex items-center justify-center px-7 py-3.5 rounded-full text-sm font-bold shadow-md transition-opacity hover:opacity-90"
+            style={{ background: '#ffd21f', color: '#001b3d' }}
           >
-            Conhecer o Sistema
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleScroll('processo')}
-            className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-white transition-all duration-200 shadow-md hover:shadow-lg"
-            style={{ background: '#38b6ff' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#6ccaff'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#38b6ff'; }}
+            Inscreva-se
+          </a>
+          <a
+            href="/login"
+            className="flex items-center justify-center px-7 py-3.5 rounded-full text-sm font-medium text-white border border-white/30 hover:border-white/60 transition-all"
           >
-            <FileText className="w-4 h-4" />
-            Ver Processo
-          </button>
+            Já inscrito? Entre aqui
+          </a>
         </motion.div>
 
       </div>
