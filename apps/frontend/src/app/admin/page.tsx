@@ -658,7 +658,7 @@ export default function AdminPage() {
   <div class="topo">
     <img src="${logoUrl}" alt="Logo Prefeitura" onerror="this.style.display='none'"/>
     <div class="topo-texto">
-      <div class="prefeitura">Prefeitura Municipal de Oriximiná — Estado do Pará</div>
+      <div class="prefeitura">Prefeitura Municipal de Oriximiná</div>
       <div class="titulo">Meritus</div>
       <div class="subtitulo">Processo Seletivo para Gestor Escolar · 2026</div>
     </div>
