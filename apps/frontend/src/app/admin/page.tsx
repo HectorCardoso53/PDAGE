@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   LogOut, CheckCircle, Clock, XCircle,
-  FileText, Brain, GraduationCap, ClipboardList, BarChart, Award, X, UserCheck, Lock,
+  FileText, Brain, GraduationCap, ClipboardList, BarChart, Award, X, UserCheck, Lock, RefreshCw,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 
@@ -884,8 +884,8 @@ export default function AdminPage() {
                             Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
                           </p>
                           {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
-                            <p className="text-xs font-semibold text-amber-600 mt-0.5">
-                              ● Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
+                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 mt-0.5">
+                              <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
                             </p>
                           )}
                         </div>
@@ -932,8 +932,8 @@ export default function AdminPage() {
                             Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
                           </p>
                           {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
-                            <p className="text-xs font-semibold text-amber-600 mt-0.5">
-                              ● Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
+                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 mt-0.5">
+                              <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
                             </p>
                           )}
                           {etapa?.observacao && (
