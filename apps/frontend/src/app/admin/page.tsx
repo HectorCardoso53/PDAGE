@@ -1100,9 +1100,11 @@ export default function AdminPage() {
             {/* Histórico */}
             {revisados.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100">
-                  <h2 className="text-base font-bold text-gray-600">Histórico</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Inscrições já revisadas</p>
+                <div className="px-6 py-4 border-b border-blue-100 flex items-center justify-between" style={{ background: '#001b3d' }}>
+                  <div>
+                    <h2 className="text-lg font-extrabold text-white tracking-wide">Histórico</h2>
+                    <p className="text-xs text-blue-200 mt-0.5">Inscrições já revisadas</p>
+                  </div>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {revisados.map(c => {
