@@ -6,7 +6,7 @@ import Image from 'next/image';
 import {
   FileText, Brain, GraduationCap, ClipboardList,
   BarChart, Award, LogOut, User, CheckCircle,
-  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X, Calendar,
+  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X, Calendar, Upload,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 import Footer from '@/components/Footer';
@@ -93,8 +93,11 @@ function maskCpf(cpf: string) {
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.$2.$3-**');
 }
 
+const PRAZO_INSCRICAO = new Date('2026-06-08T23:59:59-03:00');
+
 export default function CandidatoPage() {
   const router = useRouter();
+  const dentrodoPrazo = new Date() <= PRAZO_INSCRICAO;
   const [data, setData] = useState<DashData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -280,12 +283,22 @@ export default function CandidatoPage() {
                 <span className="text-gray-400">Matrícula: <span className="text-gray-700 font-medium">{candidato.matricula || '—'}</span></span>
                 <span className="text-gray-400">Município: <span className="text-gray-700 font-medium">{candidato.municipio}</span></span>
               </div>
-              <button
-                onClick={() => openEdit(candidato)}
-                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                <Pencil className="w-3.5 h-3.5" /> Editar dados da inscrição
-              </button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => openEdit(candidato)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Editar dados da inscrição
+                </button>
+                {dentrodoPrazo && (
+                  <button
+                    onClick={() => { setDocModal(true); setDocUploadError(''); }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Atualizar documentos
+                  </button>
+                )}
+              </div>
             </div>
             {inscricao && (
               <div className="hidden sm:block text-right flex-shrink-0">
@@ -498,14 +511,25 @@ export default function CandidatoPage() {
                               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Documentos enviados</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                 {docs.map(({ field, label }) => (
-                                  <a key={field}
-                                    href={`${API_BASE}/api/uploads/${candidato[field]}`}
-                                    target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors"
-                                  >
-                                    <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-                                    <span className="truncate">{label}</span>
-                                  </a>
+                                  <div key={field} className="flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 overflow-hidden">
+                                    <a
+                                      href={`${API_BASE}/api/uploads/${candidato[field]}`}
+                                      target="_blank" rel="noopener noreferrer"
+                                      className="flex-1 flex items-center gap-2 px-3 py-2 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors min-w-0"
+                                    >
+                                      <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                                      <span className="truncate">{label}</span>
+                                    </a>
+                                    {dentrodoPrazo && (
+                                      <button
+                                        onClick={() => { setDocModal(true); setDocUploadError(''); }}
+                                        title="Atualizar documento"
+                                        className="px-2 py-2 text-blue-500 hover:text-blue-800 hover:bg-blue-100 transition-colors flex-shrink-0 border-l border-blue-100"
+                                      >
+                                        <Upload className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
                                 ))}
                               </div>
                             </div>
