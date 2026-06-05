@@ -658,7 +658,7 @@ export default function AdminPage() {
   <div class="topo">
     <img src="${logoUrl}" alt="Logo Prefeitura" onerror="this.style.display='none'"/>
     <div class="topo-texto">
-      <div class="prefeitura">Prefeitura Municipal de Óbidos — Estado do Pará</div>
+      <div class="prefeitura">Prefeitura Municipal de Oriximiná — Estado do Pará</div>
       <div class="titulo">Meritus</div>
       <div class="subtitulo">Processo Seletivo para Gestor Escolar · 2026</div>
     </div>
@@ -691,7 +691,7 @@ export default function AdminPage() {
     <div class="rodape-assinatura">
       <div class="assinatura-bloco">
         <div class="linha">Secretaria Municipal de Educação</div>
-        <div class="cargo">Óbidos, ${dataImpressao}</div>
+        <div class="cargo">Oriximiná, ${dataImpressao}</div>
       </div>
     </div>
     <div class="rodape-info">Documento gerado pelo sistema Meritus · ${new Date().toLocaleString('pt-BR')}</div>
