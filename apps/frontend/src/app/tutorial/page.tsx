@@ -412,9 +412,9 @@ export default function TutorialPage() {
       </section>
 
       {/* Sticky Tab Bar */}
-      <div className="sticky top-16 lg:top-20 z-40 bg-white shadow-sm border-b" style={{ borderColor: '#e5e7eb' }}>
-        <div className="px-4">
-          <div className="flex justify-center gap-1 py-2">
+      <div className="sticky top-16 lg:top-20 z-40 bg-white shadow-sm border-b overflow-hidden" style={{ borderColor: '#e5e7eb' }}>
+        <div className="overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex lg:justify-center gap-1 py-2 px-4">
             {tabs.map(tab => {
               const isActive = activeTab === tab.id;
               return (
