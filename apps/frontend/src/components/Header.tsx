@@ -117,7 +117,7 @@ export default function Header() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="fixed top-16 left-0 right-0 z-40 lg:hidden overflow-hidden shadow-lg"
+            className="fixed top-16 left-0 right-0 z-50 lg:hidden overflow-hidden shadow-lg"
             style={{ background: '#001428', borderBottom: '2px solid #ffd21f' }}
           >
             <nav className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
