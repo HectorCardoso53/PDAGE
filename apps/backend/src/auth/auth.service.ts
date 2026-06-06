@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { ResetSenhaDto } from './dto/reset-senha.dto';
 
 @Injectable()
 export class AuthService {
@@ -40,6 +41,31 @@ export class AuthService {
         email: candidato.email,
       },
     };
+  }
+
+  async resetSenha(dto: ResetSenhaDto) {
+    const cpf = dto.cpf.replace(/\D/g, '');
+    const candidato = await this.prisma.candidato.findFirst({ where: { cpf } });
+
+    if (!candidato) {
+      throw new UnauthorizedException('CPF não encontrado.');
+    }
+
+    // Comparar apenas a parte da data, sem conversão de timezone
+    const dataDoBanco = candidato.dataNasc.toISOString().slice(0, 10);
+    const dataFornecida = String(dto.dataNascimento).slice(0, 10);
+
+    if (dataDoBanco !== dataFornecida) {
+      throw new UnauthorizedException('Data de nascimento incorreta.');
+    }
+
+    const hash = await bcrypt.hash(dto.novaSenha, 10);
+    await this.prisma.candidato.update({
+      where: { id: candidato.id },
+      data: { senha: hash },
+    });
+
+    return { message: 'Senha atualizada com sucesso.' };
   }
 
   async adminLogin(dto: AdminLoginDto) {

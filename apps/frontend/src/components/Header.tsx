@@ -9,6 +9,7 @@ import Image from 'next/image';
 const navLinks = [
   { label: 'Início', href: '#inicio' },
   { label: 'Sobre', href: '#sobre' },
+  { label: 'Dúvidas', href: '#faq' },
   { label: 'Processo', href: '#processo' },
 ];
 
@@ -65,7 +66,7 @@ export default function Header() {
             </a>
 
             {/* Desktop Navigation + Mobile Toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 lg:mr-16">
               <nav className="hidden lg:flex items-center gap-1">
                 {navLinks.map((link) => (
                   <button

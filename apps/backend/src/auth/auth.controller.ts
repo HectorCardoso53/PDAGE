@@ -2,6 +2,7 @@ import { Body, Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { ResetSenhaDto } from './dto/reset-senha.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -11,6 +12,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('reset-senha')
+  @HttpCode(HttpStatus.OK)
+  resetSenha(@Body() dto: ResetSenhaDto) {
+    return this.authService.resetSenha(dto);
   }
 
   @Post('admin-login')
