@@ -71,14 +71,14 @@ export default function Hero() {
         >
           <a
             href="/inscricao"
-            className="flex items-center justify-center px-7 py-3.5 rounded-full text-sm font-bold shadow-md transition-opacity hover:opacity-90"
+            className="flex items-center justify-center px-7 py-3.5 rounded-md text-sm font-bold shadow-md transition-opacity hover:opacity-90"
             style={{ background: '#ffd21f', color: '#001b3d' }}
           >
             Inscreva-se
           </a>
           <a
             href="/login"
-            className="flex items-center justify-center px-7 py-3.5 rounded-full text-sm font-medium text-white border border-white/30 hover:border-white/60 transition-all"
+            className="flex items-center justify-center px-7 py-3.5 rounded-md text-sm font-medium text-white border border-white/30 hover:border-white/60 transition-all"
           >
             Já inscrito? Entre aqui
           </a>

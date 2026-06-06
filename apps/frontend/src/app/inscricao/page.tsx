@@ -664,7 +664,7 @@ export default function InscricaoPage() {
             href="https://oriximina.1dom.com.br/edicao/01KT6S1ASXH6V93ZBZ83RZ77EK"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold transition-opacity hover:opacity-90"
             style={{ background: '#ffd21f', color: '#001b3d' }}
           >
             <FileText className="w-4 h-4" />

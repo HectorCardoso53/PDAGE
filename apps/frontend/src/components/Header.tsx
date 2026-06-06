@@ -79,6 +79,14 @@ export default function Header() {
                 ))}
               </nav>
 
+              <a
+                href="/tutorial"
+                className="hidden lg:inline-flex items-center px-4 py-2 rounded-md text-sm font-bold transition-opacity hover:opacity-90 ml-6"
+                style={{ background: '#ffd21f', color: '#001b3d' }}
+              >
+                Tutorial
+              </a>
+
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="lg:hidden p-2 rounded-lg transition-all duration-200 text-white hover:bg-white/10"
@@ -125,6 +133,22 @@ export default function Header() {
                   {link.label}
                 </motion.button>
               ))}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: navLinks.length * 0.05, duration: 0.2 }}
+                className="mt-2 pt-2"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                <a
+                  href="/tutorial"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 rounded-md text-sm font-bold"
+                  style={{ background: '#ffd21f', color: '#001b3d' }}
+                >
+                  Tutorial
+                </a>
+              </motion.div>
             </nav>
           </motion.div>
         )}

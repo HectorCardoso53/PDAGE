@@ -93,7 +93,7 @@ export default function About() {
             href="https://oriximina.1dom.com.br/edicao/01KT6S1ASXH6V93ZBZ83RZ77EK"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-sm transition-opacity hover:opacity-90 shadow-md"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-md font-semibold text-sm transition-opacity hover:opacity-90 shadow-md"
             style={{ background: '#001b3d', color: '#ffd21f' }}
           >
             <FileText className="w-4 h-4" />
