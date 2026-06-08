@@ -5,8 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: pdage-nginx
     ports:
-      - '80:80'
-      - '443:443'
+      - '127.0.0.1:8091:80'
     volumes:
       - ./docker/nginx/nginx-https.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
