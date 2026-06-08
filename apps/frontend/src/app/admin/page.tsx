@@ -608,106 +608,119 @@ export default function AdminPage() {
   const revisadosSlice = revisados.slice((revisadosPage - 1) * PAGE_SIZE, revisadosPage * PAGE_SIZE);
 
   const handlePrintReport = () => {
-    const habilitados = candidatos
-      .filter(c => c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'APROVADO')
+    const comResultado = candidatos
+      .filter(c => {
+        const s = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status;
+        return s === 'APROVADO' || s === 'REPROVADO';
+      })
       .sort((a, b) => {
-        const dA = a.inscricao?.createdAt ?? a.createdAt;
-        const dB = b.inscricao?.createdAt ?? b.createdAt;
-        return new Date(dA).getTime() - new Date(dB).getTime();
+        const sA = a.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status ?? '';
+        const sB = b.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status ?? '';
+        if (sA !== sB) return sA === 'APROVADO' ? -1 : 1;
+        return a.nome.localeCompare(b.nome, 'pt-BR');
       });
 
-    const dataImpressao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-    const logoUrl = `${window.location.origin}/logo.png`;
+    const totalHab = comResultado.filter(c => c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'APROVADO').length;
+    const totalInab = comResultado.filter(c => c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'REPROVADO').length;
 
-    const rows = habilitados.map((c, idx) => `
-      <tr style="${idx % 2 === 1 ? 'background:#f8fafc' : ''}">
-        <td style="padding:7px 10px;text-align:center;font-weight:700;color:#001b3d;border-bottom:1px solid #e5e7eb">${idx + 1}º</td>
-        <td style="padding:7px 10px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb">${c.nome}</td>
-        <td style="padding:7px 10px;font-family:monospace;font-size:11px;color:#4b5563;border-bottom:1px solid #e5e7eb">${fmtCpf(c.cpf)}</td>
-        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.inscricao?.protocolo ?? '—'}</td>
-        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.cargo}</td>
-        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.escola}</td>
-        <td style="padding:7px 10px;color:#374151;border-bottom:1px solid #e5e7eb">${c.municipio}</td>
-        <td style="padding:7px 10px;text-align:center;border-bottom:1px solid #e5e7eb">
-          <span style="display:inline-block;padding:2px 10px;border-radius:20px;background:#dcfce7;color:#15803d;font-weight:700;font-size:11px">HOMOLOGADO</span>
-        </td>
-      </tr>`).join('');
+    const dataImpressao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const logoUrl = `${window.location.origin}/bras%C3%A3o.png`;
+
+    const rows = comResultado.map((c, idx) => {
+      const aprovado = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'APROVADO';
+      const situacaoLabel = aprovado ? 'HABILITADO' : 'INABILITADO';
+      const situacaoStyle = aprovado
+        ? 'font-weight:700;color:#166534;'
+        : 'font-weight:700;color:#991b1b;';
+      return `
+      <tr style="${idx % 2 === 1 ? 'background:#f5f5f5' : ''}">
+        <td class="col-num" style="font-weight:700;">${idx + 1}º</td>
+        <td style="font-weight:600;">${c.nome}</td>
+        <td class="col-situacao" style="${situacaoStyle}">${situacaoLabel}</td>
+      </tr>`;
+    }).join('');
 
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <title>Homologação de Inscrições — Meritus</title>
+  <title>Resultado da Homologação de Inscrições</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 12px; color: #111827; background: #fff; padding: 0; }
-    @page { size: A4 portrait; margin: 18mm 15mm; }
-    .topo { display: flex; align-items: center; justify-content: center; gap: 18px; padding-bottom: 14px; border-bottom: 3px solid #001b3d; margin-bottom: 18px; }
-    .topo img { width: 64px; height: 64px; object-fit: contain; }
-    .topo-texto { text-align: center; }
-    .topo-texto .prefeitura { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
-    .topo-texto .titulo { font-size: 18px; font-weight: 800; color: #001b3d; line-height: 1.1; margin: 3px 0; }
-    .topo-texto .subtitulo { font-size: 11px; color: #374151; }
-    .secao-titulo { text-align: center; margin-bottom: 14px; }
-    .secao-titulo h2 { font-size: 13px; font-weight: 800; color: #001b3d; text-transform: uppercase; letter-spacing: 0.08em; border: 2px solid #001b3d; display: inline-block; padding: 4px 18px; }
-    .secao-titulo p { font-size: 11px; color: #6b7280; margin-top: 6px; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #000; background: #fff; }
+    @page { size: A4 portrait; margin: 20mm 15mm; }
+    .topo { text-align: center; padding-bottom: 16px; border-bottom: 2px solid #000; margin-bottom: 20px; }
+    .topo img { width: 72px; height: 72px; object-fit: contain; display: block; margin: 0 auto 10px; }
+    .topo .municipio { font-size: 15px; font-weight: 800; }
+    .topo .secretaria { font-size: 12px; font-weight: 600; margin-top: 4px; }
+    .topo .semed { font-size: 11px; color: #444; margin-top: 2px; }
+    .titulo-doc { width: 100%; text-align: center; margin: 0 0 18px 0; padding: 0; }
+    .titulo-doc h2 { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; width: 100%; margin: 0; padding: 0; display: block; }
+    .titulo-doc p { font-size: 11px; color: #555; margin: 5px 0 0 0; padding: 0; text-align: center; width: 100%; display: block; }
     table { width: 100%; border-collapse: collapse; }
-    thead tr { background: #001b3d; }
-    thead th { padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; }
-    thead th:first-child, thead th:last-child { text-align: center; }
-    tbody td { font-size: 11.5px; vertical-align: middle; }
-    .rodape { margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
-    .rodape-assinatura { display: flex; justify-content: center; margin-top: 32px; }
-    .assinatura-bloco { text-align: center; width: 260px; }
-    .assinatura-bloco .linha { border-top: 1px solid #374151; padding-top: 6px; font-size: 11px; color: #374151; font-weight: 600; }
-    .assinatura-bloco .cargo { font-size: 10px; color: #6b7280; }
-    .rodape-info { text-align: center; font-size: 10px; color: #9ca3af; margin-top: 16px; }
+    thead tr { background: #001b3d; color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead th { padding: 9px 14px; text-align: center; font-size: 12px; font-weight: 700; border: 1px solid #001b3d; }
+    tbody td { font-size: 12px; vertical-align: middle; padding: 8px 14px; border: 1px solid #000; }
+    .col-num { width: 60px; text-align: center; }
+    .col-situacao { width: 160px; text-align: center; }
   </style>
 </head>
 <body>
   <div class="topo">
-    <img src="${logoUrl}" alt="Logo Prefeitura" onerror="this.style.display='none'"/>
-    <div class="topo-texto">
-      <div class="prefeitura">Prefeitura Municipal de Oriximiná</div>
-      <div class="titulo">Meritus</div>
-      <div class="subtitulo">Processo Seletivo para Gestor Escolar · 2026</div>
-    </div>
+    <img src="${logoUrl}" alt="Brasão Prefeitura" onerror="this.style.display='none'"/>
+    <div class="municipio">Prefeitura Municipal de Oriximiná</div>
+    <div class="secretaria">Secretaria Municipal de Educação</div>
   </div>
 
-  <div class="secao-titulo">
-    <h2>Homologação de Inscrições</h2>
-    <p>Relação de candidatos com inscrição homologada · Total: <strong>${habilitados.length}</strong> candidato(s)</p>
+  <div class="titulo-doc">
+    <h2>Resultado da Homologação das Inscrições</h2>
+    <p>Homologados: <strong>${totalHab}</strong> · Inabilitados: <strong>${totalInab}</strong> · Total: <strong>${comResultado.length}</strong></p>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th style="width:30px">Nº</th>
-        <th>Nome Completo</th>
-        <th>CPF</th>
-        <th>Protocolo</th>
-        <th>Cargo</th>
-        <th>Escola</th>
-        <th>Município</th>
-        <th style="text-align:center">Situação</th>
+        <th class="col-num">Nº</th>
+        <th>Nome do Candidato</th>
+        <th class="col-situacao">Situação</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#9ca3af">Nenhuma inscrição homologada.</td></tr>'}
+      ${rows || '<tr><td colspan="3" style="text-align:center;padding:20px;color:#666">Nenhuma inscrição avaliada.</td></tr>'}
     </tbody>
   </table>
 
-  <div class="rodape">
-    <div class="rodape-assinatura">
-      <div class="assinatura-bloco">
-        <div class="linha">Secretaria Municipal de Educação</div>
-        <div class="cargo">Oriximiná, ${dataImpressao}</div>
-      </div>
-    </div>
-    <div class="rodape-info">Documento gerado pelo sistema Meritus · ${new Date().toLocaleString('pt-BR')}</div>
+  <div id="btn-area" style="margin-top:24px;text-align:center;">
+    <button id="btnPdf" style="padding:12px 36px;background:#001b3d;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
+      ⬇ Baixar PDF
+    </button>
+    <p id="status" style="margin-top:8px;font-size:12px;color:#555;"></p>
   </div>
 
-  <script>window.onload = function(){ window.print(); }<\/script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+  <script>
+    document.getElementById('btnPdf').onclick = function(){
+      var btn = document.getElementById('btnPdf');
+      var status = document.getElementById('status');
+      btn.disabled = true;
+      btn.textContent = 'Gerando...';
+      status.textContent = 'Aguarde alguns segundos...';
+      var area = document.getElementById('btn-area');
+      area.style.display = 'none';
+      html2pdf().set({
+        margin: [12, 12, 12, 12],
+        filename: 'resultado-homologacao.pdf',
+        image: { type: 'png' },
+        html2canvas: { scale: 4, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(document.body).save().then(function(){
+        area.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '⬇ Baixar PDF';
+        status.textContent = 'PDF salvo!';
+      });
+    };
+  <\/script>
 </body>
 </html>`;
 
@@ -1085,7 +1098,7 @@ export default function AdminPage() {
                           {locks[c.id] && (
                             <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
                               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-                              Em revisão por {locks[c.id]}
+                              Em análise por {locks[c.id]}
                             </p>
                           )}
                         </div>
@@ -1097,7 +1110,7 @@ export default function AdminPage() {
                             onClick={() => openReview(c)}
                             className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-opacity ${locks[c.id] ? 'opacity-60' : ''}`}
                             style={{ background: locks[c.id] ? '#92400e' : '#001b3d' }}>
-                            {locks[c.id] ? 'Em revisão…' : 'Analisar'}
+                            {locks[c.id] ? 'Em análise…' : 'Analisar'}
                           </button>
                         </div>
                       </div>
@@ -1153,7 +1166,7 @@ export default function AdminPage() {
                           {locks[c.id] && (
                             <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
                               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-                              Em revisão por {locks[c.id]}
+                              Em análise por {locks[c.id]}
                             </p>
                           )}
                           {etapa?.observacao && (
@@ -1267,12 +1280,14 @@ export default function AdminPage() {
                               <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
-                              <span className="truncate">{label}</span>
-                              {candidatoAtualizou && (
-                                <span className="flex-shrink-0 text-[9px] font-semibold text-amber-600 whitespace-nowrap">
-                                  · Atualizado em {new Date(reviewing.updatedAt).toLocaleString('pt-BR')}
-                                </span>
-                              )}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate">{label}</span>
+                                {candidatoAtualizou && (
+                                  <span className="block text-[9px] font-semibold text-amber-600">
+                                    Atualizado em {new Date(reviewing.updatedAt).toLocaleString('pt-BR')}
+                                  </span>
+                                )}
+                              </span>
                             </a>
                             <div className="flex gap-1 pr-2 flex-shrink-0">
                               <button

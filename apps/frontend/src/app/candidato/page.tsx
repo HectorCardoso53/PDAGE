@@ -57,10 +57,10 @@ type DashData = { candidato: Candidato; inscricao: Inscricao | null; etapas: Eta
 
 const ETAPA_CRONOGRAMA: Record<string, { label: string; data: string }[]> = {
   INSCRICAO: [
-    { label: 'Período de inscrições', data: '04 a 08/06/2026' },
+    { label: 'Período de inscrições', data: '04 a 09/06/2026' },
   ],
   HABILITACAO_DOCUMENTAL: [
-    { label: 'Homologação das inscrições', data: '09/06/2026' },
+    { label: 'Homologação das inscrições', data: '10/06/2026' },
   ],
   AVALIACAO_COGNITIVA: [
     { label: 'Realização da prova objetiva', data: '08/07/2026' },
@@ -93,7 +93,7 @@ function maskCpf(cpf: string) {
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.$2.$3-**');
 }
 
-const PRAZO_INSCRICAO = new Date('2026-06-08T23:59:59-03:00');
+const PRAZO_INSCRICAO = new Date('2026-06-09T23:59:59-03:00');
 
 export default function CandidatoPage() {
   const router = useRouter();

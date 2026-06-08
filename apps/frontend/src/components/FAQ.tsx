@@ -41,11 +41,11 @@ const faqCategories = [
     icon: ClipboardList,
     title: 'Inscrição',
     questions: [
-      { q: 'Qual é o período de inscrições?', a: 'As inscrições ocorrem de 04 a 08 de junho de 2026, exclusivamente pela plataforma Meritus.', ref: 'Anexo I – Cronograma' },
+      { q: 'Qual é o período de inscrições?', a: 'As inscrições ocorrem de 04 a 09 de junho de 2026, exclusivamente pela plataforma Meritus.', ref: 'Anexo I – Cronograma' },
       { q: 'A inscrição pode ser feita presencialmente?', a: 'Não. As inscrições são realizadas de forma exclusivamente eletrônica pela plataforma Meritus.', ref: 'Item 4.1' },
-      { q: 'Posso editar minha inscrição depois de enviada?', a: 'Somente durante o prazo. O sistema permite edição enquanto o período de inscrições estiver aberto (04 a 08/06/2026). Após a confirmação final e encerrado o prazo, os dados ficam bloqueados para alteração.', ref: 'Item 4.1 e Anexo I' },
+      { q: 'Posso editar minha inscrição depois de enviada?', a: 'Somente durante o prazo. O sistema permite edição enquanto o período de inscrições estiver aberto (04 a 09/06/2026). Após a confirmação final e encerrado o prazo, os dados ficam bloqueados para alteração.', ref: 'Item 4.1 e Anexo I' },
       { q: 'Posso me inscrever pelo celular?', a: 'Sim. A plataforma funciona em qualquer dispositivo com acesso à internet. Para o envio dos arquivos PDF, recomenda-se usar um computador para facilitar o upload dos documentos.', ref: 'Item 4.1' },
-      { q: 'Quando sai o resultado da homologação das inscrições?', a: 'A homologação será publicada em 09 de junho de 2026 na plataforma Meritus, nos canais da SEMED, no site da PMO e no Diário Oficial Municipal.', ref: 'Itens 4.2.1 e Anexo I' },
+      { q: 'Quando sai o resultado da homologação das inscrições?', a: 'A homologação será publicada em 10 de junho de 2026 na plataforma Meritus, nos canais da SEMED, no site da PMO e no Diário Oficial Municipal.', ref: 'Itens 4.2.1 e Anexo I' },
       { q: 'A inscrição tem taxa?', a: 'Não. O edital não menciona nenhuma taxa. O processo é inteiramente gratuito.', ref: '' },
     ],
   },
@@ -113,7 +113,7 @@ const faqCategories = [
     title: 'Plataforma Meritus',
     questions: [
       { q: 'Esqueci minha senha. Como recupero o acesso?', a: 'Utilize a opção de recuperação de senha na tela de login da plataforma, informando o e-mail cadastrado no momento da inscrição.', ref: '' },
-      { q: 'Houve problema técnico e não consegui enviar minha inscrição a tempo. O que fazer?', a: 'O edital é explícito: a comissão não se responsabiliza por falhas técnicas no equipamento, no acesso à plataforma ou na conexão de internet. Realize a inscrição o quanto antes dentro do prazo (04 a 08/06/2026).', ref: 'Item 4.2.3' },
+      { q: 'Houve problema técnico e não consegui enviar minha inscrição a tempo. O que fazer?', a: 'O edital é explícito: a comissão não se responsabiliza por falhas técnicas no equipamento, no acesso à plataforma ou na conexão de internet. Realize a inscrição o quanto antes dentro do prazo (04 a 09/06/2026).', ref: 'Item 4.2.3' },
       { q: 'Como acompanho o andamento da minha inscrição e das etapas?', a: 'Acesse a Área do Candidato com o e-mail e senha cadastrados. Lá você encontra seu protocolo, o status de cada etapa e as notificações do processo. É responsabilidade do candidato acompanhar ativamente todas as publicações na plataforma.', ref: 'Item 12.6' },
       { q: 'Enviei um documento errado. Posso substituir?', a: 'Somente antes do envio final. Enquanto o período de inscrição estiver aberto e antes de clicar em "Confirmar e Enviar", você pode substituir qualquer arquivo. Após a confirmação definitiva, não é possível alterar ou substituir documentos.', ref: '' },
     ],
