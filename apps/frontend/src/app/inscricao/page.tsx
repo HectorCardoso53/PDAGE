@@ -274,10 +274,17 @@ export default function InscricaoPage() {
     setForm(f => ({ ...f, [field]: v }));
   };
 
+  const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
   const handleFile = (field: keyof FormState, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && !file.name.toLowerCase().endsWith('.pdf')) {
       setFileError('Apenas arquivos PDF são aceitos. Converta o documento para PDF e tente novamente.');
+      e.target.value = '';
+      return;
+    }
+    if (file && file.size > MAX_FILE_SIZE) {
+      setFileError(`O arquivo "${file.name}" é muito grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Reduza o tamanho do arquivo para no máximo 20 MB antes de enviar.`);
       e.target.value = '';
       return;
     }
@@ -577,7 +584,9 @@ export default function InscricaoPage() {
               />
             </label>
             {file && isPdf && nameOk && (
-              <p className="text-xs text-green-700 mt-1.5 font-medium truncate">✓ {file.name}</p>
+              <p className="text-xs text-green-700 mt-1.5 font-medium truncate">
+                ✓ {file.name} <span className="text-gray-400 font-normal">({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
+              </p>
             )}
             {file && !isPdf && (
               <p className="text-xs text-orange-600 mt-1.5 font-medium">
@@ -980,7 +989,7 @@ export default function InscricaoPage() {
               <div className="space-y-4">
                 <h2 className="text-lg font-bold mb-1" style={{ color: '#001b3d' }}>Documentos</h2>
                 <p className="text-sm text-gray-500 mb-2">
-                  Envie todos os documentos em <strong>PDF</strong>. Nomeie cada arquivo conforme indicado no campo. Tamanho máximo: 20 MB por arquivo.
+                  Envie todos os documentos em <strong>PDF</strong>. Nomeie cada arquivo conforme indicado no campo. Tamanho máximo: <strong>20 MB</strong> por arquivo.
                 </p>
 
                 {fileError && (
