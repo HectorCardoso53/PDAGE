@@ -221,6 +221,9 @@ export default function InscricaoPage() {
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
 
+  // 09/06/2026 23:59:59 BRT
+  const prazoEncerrado = new Date() > new Date('2026-06-10T02:59:59Z');
+
   // Detecta rascunho salvo ao montar
   useEffect(() => {
     const draft = loadDraft();
@@ -1222,11 +1225,12 @@ export default function InscricaoPage() {
                 </button>
               ) : (
                 <button type="button"
-                  disabled={submitting}
-                  onClick={() => setShowConfirm(true)}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-                  style={{ background: '#38b6ff' }}>
-                  <CheckCircle className="w-4 h-4" /> Enviar Inscrição
+                  disabled={submitting || prazoEncerrado}
+                  onClick={() => !prazoEncerrado && setShowConfirm(true)}
+                  title={prazoEncerrado ? 'Prazo de inscrições encerrado em 09/06/2026' : undefined}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: prazoEncerrado ? '#9ca3af' : '#38b6ff' }}>
+                  <CheckCircle className="w-4 h-4" /> {prazoEncerrado ? 'Inscrições encerradas' : 'Enviar Inscrição'}
                 </button>
               )}
             </div>

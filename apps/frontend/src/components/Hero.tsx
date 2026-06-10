@@ -14,6 +14,8 @@ const fadeUp = {
 };
 
 export default function Hero() {
+  const prazoEncerrado = new Date() > new Date('2026-06-10T02:59:59Z');
+
   return (
     <section
       id="inicio"
@@ -69,13 +71,22 @@ export default function Hero() {
           animate="visible"
           className="flex flex-col sm:flex-row gap-3"
         >
-          <a
-            href="/inscricao"
-            className="flex items-center justify-center px-7 py-3.5 rounded-md text-sm font-bold shadow-md transition-opacity hover:opacity-90"
-            style={{ background: '#ffd21f', color: '#001b3d' }}
-          >
-            Inscreva-se
-          </a>
+          {prazoEncerrado ? (
+            <span
+              className="flex items-center justify-center px-7 py-3.5 rounded-md text-sm font-bold cursor-not-allowed opacity-50"
+              style={{ background: '#9ca3af', color: '#fff' }}
+            >
+              Inscrições encerradas
+            </span>
+          ) : (
+            <a
+              href="/inscricao"
+              className="flex items-center justify-center px-7 py-3.5 rounded-md text-sm font-bold shadow-md transition-opacity hover:opacity-90"
+              style={{ background: '#ffd21f', color: '#001b3d' }}
+            >
+              Inscreva-se
+            </a>
+          )}
           <a
             href="/login"
             className="flex items-center justify-center px-7 py-3.5 rounded-md text-sm font-medium text-white border border-white/30 hover:border-white/60 transition-all"
