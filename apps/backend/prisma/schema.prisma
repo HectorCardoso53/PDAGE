@@ -113,3 +113,8 @@ enum StatusEtapa {
   APROVADO
   REPROVADO
 }
+
+model SystemConfig {
+  key   String @id
+  value String
+}

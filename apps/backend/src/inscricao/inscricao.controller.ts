@@ -14,6 +14,11 @@ const DOC_FIELDS = [
 export class InscricaoController {
   constructor(private inscricaoService: InscricaoService) {}
 
+  @Get('homologacao-status')
+  getHomologacaoStatus() {
+    return this.inscricaoService.getHomologacaoStatus();
+  }
+
   @Get('check-cpf')
   checkCpf(@Query('cpf') cpf: string) {
     return this.inscricaoService.checkCpf(cpf ?? '');

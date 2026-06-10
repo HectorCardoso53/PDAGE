@@ -350,4 +350,60 @@ export class AdminService implements OnModuleInit {
     }
     return { notificados };
   }
+
+  async getHomologacaoStatus(): Promise<{ publicada: boolean }> {
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'homologacao_publicada' } });
+    return { publicada: cfg?.value === 'true' };
+  }
+
+  async publicarHomologacao(linkDiario?: string): Promise<{ ok: boolean; enviados: number }> {
+    const jaPublicada = await this.getHomologacaoStatus();
+    if (jaPublicada.publicada) return { ok: true, enviados: 0 };
+
+    await this.prisma.systemConfig.upsert({
+      where: { key: 'homologacao_publicada' },
+      update: { value: 'true' },
+      create: { key: 'homologacao_publicada', value: 'true' },
+    });
+
+    if (linkDiario) {
+      await this.prisma.systemConfig.upsert({
+        where: { key: 'homologacao_link_diario' },
+        update: { value: linkDiario },
+        create: { key: 'homologacao_link_diario', value: linkDiario },
+      });
+    }
+
+    const inscricoes = await this.prisma.inscricao.findMany({
+      include: {
+        candidato: { select: { nome: true, email: true } },
+        etapas: { where: { etapa: 'HABILITACAO_DOCUMENTAL' } },
+      },
+    });
+
+    let enviados = 0;
+    for (const insc of inscricoes) {
+      const etapa = insc.etapas[0];
+      if (!etapa || etapa.status === 'PENDENTE') continue;
+      const habilitado = etapa.status === 'APROVADO';
+      await this.mail.enviarResultadoHomologacao({
+        nome: insc.candidato.nome,
+        email: insc.candidato.email,
+        habilitado,
+        justificativa: habilitado ? undefined : (etapa.observacao ?? undefined),
+        linkDiario,
+      });
+      enviados++;
+    }
+    return { ok: true, enviados };
+  }
+
+  async despublicarHomologacao(): Promise<{ ok: boolean }> {
+    await this.prisma.systemConfig.upsert({
+      where: { key: 'homologacao_publicada' },
+      update: { value: 'false' },
+      create: { key: 'homologacao_publicada', value: 'false' },
+    });
+    return { ok: true };
+  }
 }

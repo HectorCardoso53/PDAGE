@@ -33,6 +33,11 @@ export class InscricaoService {
     return `${seq}-PMO/SEMED-${ano}`;
   }
 
+  async getHomologacaoStatus(): Promise<{ publicada: boolean }> {
+    const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'homologacao_publicada' } });
+    return { publicada: cfg?.value === 'true' };
+  }
+
   async checkCpf(cpf: string): Promise<{ exists: boolean }> {
     const clean = cpf.replace(/\D/g, '');
     if (clean.length !== 11) return { exists: false };

@@ -246,6 +246,10 @@ export default function AdminPage() {
   const [revisadosPage, setRevisadosPage] = useState(1);
   const [locks, setLocks] = useState<Record<string, string>>({});
   const lockHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [homologacaoPublicada, setHomologacaoPublicada] = useState(false);
+  const [publicando, setPublicando] = useState(false);
+  const [showConfirmPublicar, setShowConfirmPublicar] = useState(false);
+  const [linkDiario, setLinkDiario] = useState('');
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -286,18 +290,45 @@ export default function AdminPage() {
     const user = parseJwt(t);
     setCurrentUser(user);
     try {
-      const res = await apiFetch('/api/admin/candidatos', {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (res.status === 401 || res.status === 403) { router.replace('/admin/login'); return; }
-      const data = await res.json();
+      const [resC, resH] = await Promise.all([
+        apiFetch('/api/admin/candidatos', { headers: { Authorization: `Bearer ${t}` } }),
+        apiFetch('/api/admin/homologacao/status', { headers: { Authorization: `Bearer ${t}` } }),
+      ]);
+      if (resC.status === 401 || resC.status === 403) { router.replace('/admin/login'); return; }
+      const data = await resC.json();
       setCandidatos(Array.isArray(data) ? data : []);
+      if (resH.ok) { const h = await resH.json(); setHomologacaoPublicada(h.publicada); }
     } catch {
       setError('Erro ao carregar candidatos.');
     } finally {
       setLoading(false);
     }
   }, [router]);
+
+  const handlePublicar = async () => {
+    setShowConfirmPublicar(true);
+  };
+
+  const confirmarPublicar = async () => {
+    setShowConfirmPublicar(false);
+    setPublicando(true);
+    const acao = homologacaoPublicada ? 'despublicar' : 'publicar';
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const res = await apiFetch(`/api/admin/homologacao/${acao}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkDiario: linkDiario.trim() || undefined }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHomologacaoPublicada(!homologacaoPublicada);
+        if (!homologacaoPublicada && data.enviados !== undefined)
+          alert(`Resultado publicado! E-mails enviados: ${data.enviados}`);
+      }
+    } catch { alert('Erro ao publicar resultado.'); }
+    finally { setPublicando(false); }
+  };
 
   const loadAuditLogs = useCallback(async () => {
     const t = localStorage.getItem('meritus_admin_token');
@@ -601,6 +632,9 @@ export default function AdminPage() {
     ['APROVADO', 'REPROVADO'].includes(c.etapas.find(e => e.etapa === 'INSCRICAO')?.status ?? '')
   );
 
+  const totalHabilitados = candidatos.filter(c => c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'APROVADO').length;
+  const totalInabilitados = candidatos.filter(c => c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'REPROVADO').length;
+
   const pendingTotalPages = Math.max(1, Math.ceil(pendingRevisao.length / PAGE_SIZE));
   const pendingSlice = pendingRevisao.slice((pendingPage - 1) * PAGE_SIZE, pendingPage * PAGE_SIZE);
 
@@ -779,9 +813,15 @@ export default function AdminPage() {
             </button>
             {(currentUser?.role === 'admin' || (currentUser?.role === 'comissao' && currentUser?.permissao === 'MASTER')) && (
               <>
+                <button
+                  onClick={handlePublicar}
+                  disabled={publicando}
+                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
+                  {publicando ? '...' : homologacaoPublicada ? '✓ Publicado' : 'Publicar Resultado'}
+                </button>
                 <button onClick={() => { setShowMembros(true); loadMembros(); }}
                   className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
-                  Comissão
+                  Usuário
                 </button>
                 <button onClick={() => { setShowAuditoria(true); loadAuditLogs(); }}
                   className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors">
@@ -796,6 +836,59 @@ export default function AdminPage() {
           </div>
         </div>
       </header>
+
+      {/* Modal — Confirmação Publicar/Despublicar Resultado */}
+      {showConfirmPublicar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Cabeçalho azul-marinho */}
+            <div className="flex items-center gap-3 px-6 py-4" style={{ background: '#001b3d' }}>
+              <Image src="/logo.png" alt="Logo" width={36} height={36} className="object-contain shrink-0" />
+              <h3 className="text-sm font-bold text-white leading-snug">
+                {homologacaoPublicada ? 'Despublicar resultado?' : 'Publicar resultado da homologação?'}
+              </h3>
+            </div>
+            {/* Linha amarela separadora */}
+            <div style={{ height: 3, background: '#ffd21f' }} />
+            {/* Corpo branco */}
+            <div className="px-6 py-5">
+              <p className="text-sm text-gray-600 mb-4">
+                {homologacaoPublicada
+                  ? 'Os candidatos não verão mais o resultado da habilitação documental.'
+                  : 'Um e-mail será enviado para todos os candidatos com o resultado da habilitação documental.'}
+              </p>
+              {!homologacaoPublicada && (
+                <div className="mb-6">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">
+                    Link do resultado no Diário Oficial <span className="font-normal text-gray-400">(opcional)</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://diariooficial.oriximina.pa.gov.br/..."
+                    value={linkDiario}
+                    onChange={e => setLinkDiario(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">Se informado, o e-mail incluirá um botão &quot;Confira no Diário Oficial&quot;.</p>
+                </div>
+              )}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowConfirmPublicar(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarPublicar}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                  style={{ background: '#001b3d' }}>
+                  {homologacaoPublicada ? 'Sim, despublicar' : 'Sim, publicar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal — Membros da Comissão */}
       {showMembros && (
@@ -1069,11 +1162,7 @@ export default function AdminPage() {
                   <h2 className="text-lg font-extrabold text-white tracking-wide">Aguardando Análise</h2>
                   <p className="text-xs text-blue-200 mt-0.5">Inscrições pendentes de validação</p>
                 </div>
-                {pendingRevisao.length > 0 && (
-                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                    {pendingRevisao.length} pendente{pendingRevisao.length > 1 ? 's' : ''}
-                  </span>
-                )}
+                <span className="text-xs font-bold text-white">Em análise: {pendingRevisao.length}</span>
               </div>
               {pendingRevisao.length === 0 ? (
                 <div className="py-10 text-center text-gray-400 text-sm">Nenhuma inscrição pendente.</div>
@@ -1144,6 +1233,10 @@ export default function AdminPage() {
                   <div>
                     <h2 className="text-lg font-extrabold text-white tracking-wide">Histórico</h2>
                     <p className="text-xs text-blue-200 mt-0.5">Inscrições já revisadas</p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs font-bold text-white">
+                    <span>Habilitados: {totalHabilitados}</span>
+                    <span>Inabilitados: {totalInabilitados}</span>
                   </div>
                 </div>
                 <div className="divide-y divide-gray-50">

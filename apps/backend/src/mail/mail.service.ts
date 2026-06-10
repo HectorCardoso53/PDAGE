@@ -137,6 +137,78 @@ export class MailService {
     }
   }
 
+  async enviarResultadoHomologacao(params: { nome: string; email: string; habilitado: boolean; justificativa?: string; linkDiario?: string }) {
+    const { nome, email, habilitado, justificativa, linkDiario } = params;
+    const primeiroNome = nome.split(' ')[0];
+    const cor = habilitado ? '#166534' : '#991b1b';
+    const bgCor = habilitado ? '#f0fdf4' : '#fef2f2';
+    const bordaCor = habilitado ? '#86efac' : '#fecaca';
+    const titulo = habilitado ? '✅ Inscrição Habilitada' : '❌ Inscrição Inabilitada';
+    const texto = habilitado
+      ? 'Sua inscrição foi <strong>habilitada</strong> na etapa de Habilitação Documental. Você está apto a prosseguir nas próximas etapas do processo seletivo.'
+      : 'Sua inscrição foi <strong>inabilitada</strong> na etapa de Habilitação Documental. Consulte a justificativa abaixo.';
+    const justificativaHtml = !habilitado && justificativa ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin:20px 0;">
+        <tr><td style="padding:16px 20px;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:bold;color:#991b1b;">Justificativa:</p>
+          <p style="margin:0;font-size:14px;color:#7f1d1d;line-height:1.6;">${justificativa}</p>
+        </td></tr>
+      </table>` : '';
+    const linkDiarioHtml = linkDiario ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;margin:20px 0;">
+        <tr><td style="padding:16px 20px;">
+          <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#0369a1;">📋 Resultado no Diário Oficial</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#0c4a6e;line-height:1.6;">Confira o resultado publicado no Diário Oficial do Município:</p>
+          <a href="${linkDiario}" target="_blank" style="display:inline-block;padding:10px 20px;background:#001b3d;color:#ffffff;font-size:13px;font-weight:bold;border-radius:8px;text-decoration:none;">Acessar Diário Oficial</a>
+        </td></tr>
+      </table>` : '';
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:#001b3d;padding:32px 40px;border-bottom:4px solid #ffd21f;">
+          <p style="margin:0;color:#ffd21f;font-size:22px;font-weight:bold;">MERITUS</p>
+          <p style="margin:4px 0 0;color:#fff;font-size:12px;opacity:0.7;">Gestores Escolares — Prefeitura Municipal de Oriximiná/PA</p>
+        </td></tr>
+        <tr><td style="padding:40px;">
+          <h2 style="margin:0 0 8px;color:#001b3d;font-size:20px;">${titulo}</h2>
+          <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 20px;">Olá, <strong>${primeiroNome}</strong>!<br/>${texto}</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:${bgCor};border:2px solid ${bordaCor};border-radius:10px;margin-bottom:20px;">
+            <tr><td style="padding:18px 20px;text-align:center;">
+              <p style="margin:0;font-size:18px;font-weight:bold;color:${cor};">${habilitado ? 'HABILITADO' : 'INABILITADO'}</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Resultado da Homologação de Inscrições</p>
+            </td></tr>
+          </table>
+          ${justificativaHtml}
+          ${linkDiarioHtml}
+          <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">${habilitado
+            ? 'Acesse a <strong>Área do Candidato</strong> na plataforma Meritus para acompanhar as próximas etapas.'
+            : 'Agradecemos sua participação no Processo Seletivo de Gestores Escolares da Prefeitura Municipal de Oriximiná. Desejamos sucesso em suas futuras oportunidades.'
+          }</p>
+          <p style="color:#9ca3af;font-size:12px;margin:0;">Em caso de dúvidas, entre em contato com a SEMED.</p>
+        </td></tr>
+        <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">
+          <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;">Secretaria Municipal de Educação — SEMED · Oriximiná/PA</p>
+          <p style="margin:0;font-size:11px;color:#d1d5db;">Este é um e-mail automático. Não responda a esta mensagem.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+    try {
+      await this.transporter.sendMail({
+        from: `"Meritus — SEMED Oriximiná" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: `${habilitado ? '✅' : '❌'} Resultado da Homologação — Meritus`,
+        html,
+      });
+      this.logger.log(`E-mail de resultado enviado para ${email}`);
+    } catch (err: any) {
+      this.logger.error(`Falha ao enviar resultado para ${email}: ${err?.message}`);
+    }
+  }
+
   async enviarConfirmacaoInscricao(params: {
     nome: string;
     email: string;
