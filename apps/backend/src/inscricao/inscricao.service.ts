@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -41,6 +41,12 @@ export class InscricaoService {
   }
 
   async criar(dto: CriarInscricaoDto, files: Record<string, any[]>) {
+    // 09/06/2026 23:59:59 BRT = 10/06/2026 02:59:59 UTC
+    const PRAZO = new Date('2026-06-10T02:59:59Z');
+    if (new Date() > PRAZO) {
+      throw new BadRequestException('O prazo de inscrições encerrou em 09 de junho de 2026 às 23h59. Não é mais possível realizar novas inscrições.');
+    }
+
     const cpf = dto.cpf.replace(/\D/g, '');
 
     const existente = await this.prisma.candidato.findUnique({ where: { cpf } });
