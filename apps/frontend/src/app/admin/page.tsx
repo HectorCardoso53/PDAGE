@@ -668,7 +668,7 @@ export default function AdminPage() {
         : 'font-weight:700;color:#991b1b;';
       return `
       <tr style="${idx % 2 === 1 ? 'background:#f5f5f5' : ''}">
-        <td class="col-num" style="font-weight:700;">${idx + 1}º</td>
+        <td class="col-num" style="font-weight:700;">${idx + 1}</td>
         <td style="font-weight:600;">${c.nome}</td>
         <td class="col-situacao" style="${situacaoStyle}">${situacaoLabel}</td>
       </tr>`;
