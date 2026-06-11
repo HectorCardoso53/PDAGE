@@ -697,6 +697,7 @@ export default function AdminPage() {
     tbody td { font-size: 12px; vertical-align: middle; padding: 8px 14px; border: 1px solid #000; }
     .col-num { width: 60px; text-align: center; }
     .col-situacao { width: 160px; text-align: center; }
+    @media print { #btn-area { display: none !important; } }
   </style>
 </head>
 <body>
@@ -725,36 +726,11 @@ export default function AdminPage() {
   </table>
 
   <div id="btn-area" style="margin-top:24px;text-align:center;">
-    <button id="btnPdf" style="padding:12px 36px;background:#001b3d;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
+    <button onclick="document.getElementById('btn-area').style.display='none';window.print();document.getElementById('btn-area').style.display='block';"
+      style="padding:12px 36px;background:#001b3d;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;">
       ⬇ Baixar PDF
     </button>
-    <p id="status" style="margin-top:8px;font-size:12px;color:#555;"></p>
   </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
-  <script>
-    document.getElementById('btnPdf').onclick = function(){
-      var btn = document.getElementById('btnPdf');
-      var status = document.getElementById('status');
-      btn.disabled = true;
-      btn.textContent = 'Gerando...';
-      status.textContent = 'Aguarde alguns segundos...';
-      var area = document.getElementById('btn-area');
-      area.style.display = 'none';
-      html2pdf().set({
-        margin: [12, 12, 12, 12],
-        filename: 'resultado-homologacao.pdf',
-        image: { type: 'png' },
-        html2canvas: { scale: 4, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      }).from(document.body).save().then(function(){
-        area.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = '⬇ Baixar PDF';
-        status.textContent = 'PDF salvo!';
-      });
-    };
-  <\/script>
 </body>
 </html>`;
 
