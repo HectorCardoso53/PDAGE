@@ -306,13 +306,17 @@ export default function AdminPage() {
   }, [router]);
 
   const handlePublicar = async () => {
+    if (homologacaoPublicada) {
+      alert('O resultado já foi publicado. Os candidatos já receberam o e-mail com o resultado.');
+      return;
+    }
     setShowConfirmPublicar(true);
   };
 
   const confirmarPublicar = async () => {
     setShowConfirmPublicar(false);
     setPublicando(true);
-    const acao = homologacaoPublicada ? 'despublicar' : 'publicar';
+    const acao = 'publicar';
     const t = localStorage.getItem('meritus_admin_token');
     try {
       const res = await apiFetch(`/api/admin/homologacao/${acao}`, {
@@ -792,7 +796,7 @@ export default function AdminPage() {
                 <button
                   onClick={handlePublicar}
                   disabled={publicando}
-                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
+                  className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${homologacaoPublicada ? 'text-green-300 cursor-default' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>
                   {publicando ? '...' : homologacaoPublicada ? '✓ Publicado' : 'Publicar Resultado'}
                 </button>
                 <button onClick={() => { setShowMembros(true); loadMembros(); }}
