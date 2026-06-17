@@ -184,14 +184,25 @@ function getStageData(etapa: string, c: AdminCandidato, allEtapas: EtapaAdmin[])
         { label: 'Escola',         value: c.escola },
         { label: 'Município',      value: c.municipio },
       ];
-    case 'AVALIACAO_COGNITIVA':
+    case 'AVALIACAO_COGNITIVA': {
+      const hab = allEtapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
+      const habLabel = hab ? getStatusCfg(hab.status, hab.etapa).label : '—';
+      const habObs   = hab?.observacao ? ` — ${hab.observacao}` : '';
       return [
-        { label: 'Candidato',  value: c.nome },
-        { label: 'Vínculo',    value: c.vinculo || '—' },
-        { label: 'Cargo',      value: c.cargo },
-        { label: 'Escola',     value: c.escola },
-        { label: 'Matrícula',  value: c.matricula || '—' },
+        { label: 'Candidato',        value: c.nome },
+        { label: 'CPF',              value: fmtCpf(c.cpf) },
+        { label: 'Data de nasc.',    value: fmtDate(c.dataNasc) },
+        { label: 'Vínculo',          value: c.vinculo || '—' },
+        { label: 'Cargo',            value: c.cargo },
+        { label: 'Escola',           value: c.escola },
+        { label: 'Município',        value: c.municipio },
+        ...(c.vinculo !== 'Temporário' ? [{ label: 'Matrícula', value: c.matricula || '—' }] : []),
+        { label: 'Formação',         value: c.formacao || '—' },
+        { label: 'Especialização',   value: c.especializacao || '—' },
+        { label: 'Tempo de serv.',   value: c.tempoServico || '—' },
+        { label: 'Hab. Documental',  value: habLabel + habObs },
       ];
+    }
     case 'PLANO_GESTAO':
       return [
         { label: 'Candidato', value: c.nome },
@@ -1810,7 +1821,9 @@ export default function AdminPage() {
                               <FileText className="w-3.5 h-3.5" />
                               {etapa.etapa === 'RESULTADO_FINAL' || etapa.etapa === 'CERTIFICACAO'
                                 ? 'Resumo das etapas'
-                                : 'Dados do candidato para verificação'}
+                                : etapa.etapa === 'AVALIACAO_COGNITIVA'
+                                  ? 'Dados da Inscrição e Habilitação Documental'
+                                  : 'Dados do candidato para verificação'}
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-3 rounded-lg border border-gray-100 bg-gray-50">
                               {stageData.map(row => (
