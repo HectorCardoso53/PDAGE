@@ -139,6 +139,7 @@ export class MailService {
 
   async enviarResultadoHomologacao(params: { nome: string; email: string; habilitado: boolean; justificativa?: string; linkDiario?: string }) {
     const { nome, email, habilitado, justificativa, linkDiario } = params;
+    const appUrl = process.env.APP_URL ?? 'https://meritus.oriximina.pa.gov.br';
     const primeiroNome = nome.split(' ')[0];
     const cor = habilitado ? '#166534' : '#991b1b';
     const bgCor = habilitado ? '#f0fdf4' : '#fef2f2';
@@ -146,7 +147,7 @@ export class MailService {
     const titulo = habilitado ? '✅ Inscrição Habilitada' : '❌ Inscrição Inabilitada';
     const texto = habilitado
       ? 'Sua inscrição foi <strong>habilitada</strong> na etapa de Habilitação Documental. Você está apto a prosseguir nas próximas etapas do processo seletivo.'
-      : 'Sua inscrição foi <strong>inabilitada</strong> na etapa de Habilitação Documental. Consulte a justificativa abaixo.';
+      : 'Sua inscrição foi <strong>inabilitada</strong> na etapa de Habilitação Documental. Consulte a justificativa abaixo e acesse o sistema para mais detalhes.';
     const justificativaHtml = !habilitado && justificativa ? `
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin:20px 0;">
         <tr><td style="padding:16px 20px;">
@@ -159,7 +160,7 @@ export class MailService {
         <tr><td style="padding:16px 20px;">
           <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#0369a1;">📋 Resultado no Diário Oficial</p>
           <p style="margin:0 0 12px;font-size:13px;color:#0c4a6e;line-height:1.6;">Confira o resultado publicado no Diário Oficial do Município:</p>
-          <a href="${linkDiario}" target="_blank" style="display:inline-block;padding:10px 20px;background:#001b3d;color:#ffffff;font-size:13px;font-weight:bold;border-radius:8px;text-decoration:none;">Acessar Diário Oficial</a>
+          <a href="${linkDiario}" target="_blank" style="display:inline-block;padding:10px 20px;background:#0369a1;color:#ffffff;font-size:13px;font-weight:bold;border-radius:8px;text-decoration:none;">Acessar Diário Oficial</a>
         </td></tr>
       </table>` : '';
     const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/></head>
@@ -182,10 +183,15 @@ export class MailService {
           </table>
           ${justificativaHtml}
           ${linkDiarioHtml}
-          <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">${habilitado
-            ? 'Acesse a <strong>Área do Candidato</strong> na plataforma Meritus para acompanhar as próximas etapas.'
-            : 'Agradecemos sua participação no Processo Seletivo de Gestores Escolares da Prefeitura Municipal de Oriximiná. Desejamos sucesso em suas futuras oportunidades.'
-          }</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin:20px 0;">
+            <tr><td style="padding:20px;text-align:center;">
+              <p style="margin:0 0 12px;font-size:14px;color:#374151;">${habilitado
+                ? 'Acesse sua <strong>Área do Candidato</strong> para acompanhar as próximas etapas do processo seletivo.'
+                : 'Acesse sua <strong>Área do Candidato</strong> para consultar todos os detalhes do seu resultado e documentos analisados.'
+              }</p>
+              <a href="${appUrl}/login" target="_blank" style="display:inline-block;padding:12px 28px;background:#001b3d;color:#ffffff;font-size:14px;font-weight:bold;border-radius:8px;text-decoration:none;">Acessar Área do Candidato</a>
+            </td></tr>
+          </table>
           <p style="color:#9ca3af;font-size:12px;margin:0;">Em caso de dúvidas, entre em contato com a SEMED.</p>
         </td></tr>
         <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;text-align:center;">

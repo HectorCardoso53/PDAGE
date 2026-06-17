@@ -101,8 +101,10 @@ export class CandidatoService {
         tipo,
         label: ETAPA_LABELS[tipo],
         status: etapaDb?.status ?? 'PENDENTE',
+        statusPublicado: etapaDb?.statusPublicado ?? null,
         pontuacao: etapaDb?.pontuacao ?? null,
         observacao: etapaDb?.observacao ?? null,
+        observacaoPublicada: etapaDb?.observacaoPublicada ?? null,
         recurso: etapaDb?.recurso ?? null,
         docChecks: etapaDb?.docChecks ?? null,
       };

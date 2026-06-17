@@ -83,16 +83,18 @@ model Inscricao {
 }
 
 model EtapaStatus {
-  id          String      @id @default(cuid())
-  inscricaoId String
-  inscricao   Inscricao   @relation(fields: [inscricaoId], references: [id])
-  etapa       EtapaTipo
-  status      StatusEtapa @default(PENDENTE)
-  pontuacao   Float?
-  observacao  String?
-  recurso     String?
-  docChecks   String?
-  updatedAt   DateTime    @updatedAt
+  id                  String      @id @default(cuid())
+  inscricaoId         String
+  inscricao           Inscricao   @relation(fields: [inscricaoId], references: [id])
+  etapa               EtapaTipo
+  status              StatusEtapa @default(PENDENTE)
+  statusPublicado     StatusEtapa?
+  pontuacao           Float?
+  observacao          String?
+  observacaoPublicada String?
+  recurso             String?
+  docChecks           String?
+  updatedAt           DateTime    @updatedAt
 
   @@unique([inscricaoId, etapa])
 }
@@ -117,4 +119,14 @@ enum StatusEtapa {
 model SystemConfig {
   key   String @id
   value String
+}
+
+model HomologacaoPublicacao {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  tipo      String   // 'todos' | 'especifico'
+  titulo    String?
+  link      String?
+  enviados  Int      @default(0)
+  nomes     String?  // comma-separated names for 'especifico' publications
 }

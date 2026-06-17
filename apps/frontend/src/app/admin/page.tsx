@@ -247,9 +247,17 @@ export default function AdminPage() {
   const [locks, setLocks] = useState<Record<string, string>>({});
   const lockHeartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [homologacaoPublicada, setHomologacaoPublicada] = useState(false);
+  const [homologacaoLinkAtual, setHomologacaoLinkAtual] = useState<string | null>(null);
   const [publicando, setPublicando] = useState(false);
   const [showConfirmPublicar, setShowConfirmPublicar] = useState(false);
   const [linkDiario, setLinkDiario] = useState('');
+  const [publicacoes, setPublicacoes] = useState<{ id: string; createdAt: string; tipo: string; titulo?: string | null; link?: string | null; enviados: number; nomes?: string | null }[]>([]);
+  const [pubStep, setPubStep] = useState<'history' | 'target' | 'select'>('history');
+  const [pubTarget, setPubTarget] = useState<'todos' | 'especifico'>('todos');
+  const [pubSelectedIds, setPubSelectedIds] = useState<string[]>([]);
+  const [pubSearch, setPubSearch] = useState('');
+  const [pubTitulo, setPubTitulo] = useState('');
+  const [reviewToast, setReviewToast] = useState<{ nome: string; acao: 'habilitado' | 'inabilitado' } | null>(null);
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -297,7 +305,7 @@ export default function AdminPage() {
       if (resC.status === 401 || resC.status === 403) { router.replace('/admin/login'); return; }
       const data = await resC.json();
       setCandidatos(Array.isArray(data) ? data : []);
-      if (resH.ok) { const h = await resH.json(); setHomologacaoPublicada(h.publicada); }
+      if (resH.ok) { const h = await resH.json(); setHomologacaoPublicada(h.publicada); setHomologacaoLinkAtual(h.link ?? null); }
     } catch {
       setError('Erro ao carregar candidatos.');
     } finally {
@@ -306,29 +314,55 @@ export default function AdminPage() {
   }, [router]);
 
   const handlePublicar = async () => {
-    if (homologacaoPublicada) {
-      alert('O resultado já foi publicado. Os candidatos já receberam o e-mail com o resultado.');
-      return;
+    setPubStep('history');
+    setPubSelectedIds([]);
+    setPubSearch('');
+    setPubTitulo('');
+    const t = localStorage.getItem('meritus_admin_token');
+    if (t) {
+      const res = await apiFetch('/api/admin/homologacao/publicacoes', { headers: { Authorization: `Bearer ${t}` } });
+      if (res.ok) setPublicacoes(await res.json());
     }
     setShowConfirmPublicar(true);
   };
 
-  const confirmarPublicar = async () => {
-    setShowConfirmPublicar(false);
+  const handleDespublicar = async () => {
+    if (!confirm('Tem certeza que deseja despublicar o resultado? Os candidatos não verão mais o resultado até a próxima publicação.')) return;
     setPublicando(true);
-    const acao = 'publicar';
     const t = localStorage.getItem('meritus_admin_token');
     try {
-      const res = await apiFetch(`/api/admin/homologacao/${acao}`, {
+      const res = await apiFetch('/api/admin/homologacao/despublicar', {
         method: 'POST',
         headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linkDiario: linkDiario.trim() || undefined }),
+        body: JSON.stringify({}),
+      });
+      if (res.ok) { setHomologacaoPublicada(false); setHomologacaoLinkAtual(null); }
+    } catch { alert('Erro ao despublicar.'); }
+    finally { setPublicando(false); }
+  };
+
+  const confirmarPublicar = async () => {
+
+    setShowConfirmPublicar(false);
+    setPublicando(true);
+    const t = localStorage.getItem('meritus_admin_token');
+    try {
+      const body: Record<string, unknown> = {
+        linkDiario: linkDiario.trim() || undefined,
+        titulo: pubTitulo.trim() || undefined,
+      };
+      if (pubTarget === 'especifico') body.candidatoIds = pubSelectedIds;
+      const res = await apiFetch('/api/admin/homologacao/publicar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
-        setHomologacaoPublicada(!homologacaoPublicada);
-        if (!homologacaoPublicada && data.enviados !== undefined)
-          alert(`Resultado publicado! E-mails enviados: ${data.enviados}`);
+        setHomologacaoPublicada(true);
+        if (linkDiario.trim()) setHomologacaoLinkAtual(linkDiario.trim());
+        if (data.enviados !== undefined)
+          alert(`Publicado! E-mails enviados: ${data.enviados}`);
       }
     } catch { alert('Erro ao publicar resultado.'); }
     finally { setPublicando(false); }
@@ -528,6 +562,8 @@ export default function AdminPage() {
           return e;
         }),
       }));
+      setReviewToast({ nome: candidato.nome, acao: action === 'approve' ? 'habilitado' : 'inabilitado' });
+      setTimeout(() => setReviewToast(null), 5000);
       closeReview(candidato.id);
     } finally {
       setReviewSaving(false);
@@ -796,7 +832,7 @@ export default function AdminPage() {
                 <button
                   onClick={handlePublicar}
                   disabled={publicando}
-                  className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${homologacaoPublicada ? 'text-green-300 cursor-default' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>
+                  className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${homologacaoPublicada ? 'text-green-300 hover:text-white hover:bg-white/10' : 'text-white/60 hover:text-white hover:bg-white/10'}`}>
                   {publicando ? '...' : homologacaoPublicada ? '✓ Publicado' : 'Publicar Resultado'}
                 </button>
                 <button onClick={() => { setShowMembros(true); loadMembros(); }}
@@ -817,7 +853,20 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Modal — Confirmação Publicar/Despublicar Resultado */}
+      {/* Toast — resultado registrado, não publicado */}
+      {reviewToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border text-sm font-semibold"
+          style={{ background: reviewToast.acao === 'habilitado' ? '#f0fdf4' : '#fef2f2', borderColor: reviewToast.acao === 'habilitado' ? '#86efac' : '#fca5a5', color: reviewToast.acao === 'habilitado' ? '#166534' : '#991b1b' }}>
+          {reviewToast.acao === 'habilitado' ? '✓' : '✗'}
+          <span>
+            <strong>{reviewToast.nome}</strong> {reviewToast.acao === 'habilitado' ? 'habilitado' : 'inabilitado'}.
+            {' '}<span className="font-normal opacity-80">Resultado salvo internamente — candidato não foi notificado.</span>
+          </span>
+          <button onClick={() => setReviewToast(null)} className="ml-2 opacity-50 hover:opacity-100 text-base leading-none">×</button>
+        </div>
+      )}
+
+      {/* Modal — Publicações da Homologação */}
       {showConfirmPublicar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -825,47 +874,174 @@ export default function AdminPage() {
             <div className="flex items-center gap-3 px-6 py-4" style={{ background: '#001b3d' }}>
               <Image src="/logo.png" alt="Logo" width={36} height={36} className="object-contain shrink-0" />
               <h3 className="text-sm font-bold text-white leading-snug">
-                {homologacaoPublicada ? 'Despublicar resultado?' : 'Publicar resultado da homologação?'}
+                {pubStep === 'history' ? 'Publicações da homologação' : pubStep === 'target' ? 'Nova publicação' : 'Selecionar candidatos'}
               </h3>
             </div>
             {/* Linha amarela separadora */}
             <div style={{ height: 3, background: '#ffd21f' }} />
-            {/* Corpo branco */}
-            <div className="px-6 py-5">
-              <p className="text-sm text-gray-600 mb-4">
-                {homologacaoPublicada
-                  ? 'Os candidatos não verão mais o resultado da habilitação documental.'
-                  : 'Um e-mail será enviado para todos os candidatos com o resultado da habilitação documental.'}
-              </p>
-              {!homologacaoPublicada && (
-                <div className="mb-6">
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">
-                    Link do resultado no Diário Oficial <span className="font-normal text-gray-400">(opcional)</span>
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://diariooficial.oriximina.pa.gov.br/..."
-                    value={linkDiario}
-                    onChange={e => setLinkDiario(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
-                  />
-                  <p className="mt-1 text-xs text-gray-400">Se informado, o e-mail incluirá um botão &quot;Confira no Diário Oficial&quot;.</p>
+
+            {/* Step: history */}
+            {pubStep === 'history' && (
+              <div className="px-6 py-5">
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Histórico de publicações</p>
+                  {publicacoes.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {publicacoes.map((p, i) => (
+                        <div key={p.id} className={`rounded-lg border px-3 py-2.5 ${i === 0 ? 'border-blue-200 bg-blue-50' : 'border-gray-100 bg-gray-50'}`}>
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div>
+                              {p.titulo && <p className="text-xs font-bold text-gray-800">{p.titulo}</p>}
+                              <p className="text-xs font-semibold text-gray-600">
+                                {p.tipo === 'todos' ? 'Todos os candidatos' : 'Candidatos específicos'}
+                              </p>
+                            </div>
+                            <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(p.createdAt).toLocaleString('pt-BR')}</span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {p.enviados} e-mail{p.enviados !== 1 ? 's' : ''} enviado{p.enviados !== 1 ? 's' : ''}
+                            {p.nomes ? ` — ${p.nomes}` : ''}
+                          </p>
+                          {p.link && (
+                            <a href={p.link} target="_blank" rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline mt-1 inline-block truncate max-w-full">
+                              🔗 Ver no Diário Oficial
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : homologacaoPublicada ? (
+                    <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-block w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
+                        <span className="text-xs font-semibold text-green-700">Resultado publicado — visível para os candidatos</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mb-1">Data de publicação não registrada (publicação anterior ao histórico).</p>
+                      {homologacaoLinkAtual ? (
+                        <a href={homologacaoLinkAtual} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline inline-block truncate max-w-full">
+                          🔗 Ver no Diário Oficial
+                        </a>
+                      ) : (
+                        <p className="text-xs text-gray-400">Nenhum link do Diário Oficial registrado.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Nenhuma publicação realizada ainda.</p>
+                  )}
                 </div>
-              )}
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setShowConfirmPublicar(false)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmarPublicar}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
-                  style={{ background: '#001b3d' }}>
-                  {homologacaoPublicada ? 'Sim, despublicar' : 'Sim, publicar'}
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowConfirmPublicar(false)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                    Fechar
+                  </button>
+                  <button onClick={() => setPubStep('target')}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
+                    style={{ background: '#001b3d' }}>
+                    Nova publicação
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Step: target */}
+            {pubStep === 'target' && (
+              <div className="px-6 py-5">
+                <p className="text-sm font-semibold text-gray-700 mb-4">Para quem enviar o e-mail?</p>
+                <div className="space-y-3 mb-5">
+                  <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${pubTarget === 'todos' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <input type="radio" name="pubTarget" value="todos" checked={pubTarget === 'todos'} onChange={() => setPubTarget('todos')} className="accent-blue-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700">Todos os candidatos</p>
+                      <p className="text-xs text-gray-400">E-mail enviado para todos que têm resultado (habilitado ou inabilitado)</p>
+                    </div>
+                  </label>
+                  <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${pubTarget === 'especifico' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <input type="radio" name="pubTarget" value="especifico" checked={pubTarget === 'especifico'} onChange={() => setPubTarget('especifico')} className="accent-blue-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700">Candidatos específicos</p>
+                      <p className="text-xs text-gray-400">Selecione manualmente quais candidatos receberão o e-mail</p>
+                    </div>
+                  </label>
+                </div>
+                <div className="mb-3">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">
+                    Título da publicação <span className="font-normal text-gray-400">(ex: Publicação Inicial, Retificação)</span>
+                  </label>
+                  <input type="text" placeholder="Ex: Retificação do resultado..."
+                    value={pubTitulo} onChange={e => setPubTitulo(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">
+                    Link do Diário Oficial <span className="font-normal text-gray-400">(opcional)</span>
+                  </label>
+                  <input type="url" placeholder="https://diariooficial.oriximina.pa.gov.br/..."
+                    value={linkDiario} onChange={e => setLinkDiario(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setPubStep('history')}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                    ← Voltar
+                  </button>
+                  <button onClick={() => { if (pubTarget === 'especifico') { setPubStep('select'); } else { confirmarPublicar(); } }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
+                    style={{ background: '#001b3d' }}>
+                    {pubTarget === 'especifico' ? 'Selecionar candidatos →' : 'Publicar para todos'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step: select */}
+            {pubStep === 'select' && (
+              <div className="px-6 py-5">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Selecione os candidatos</p>
+                <input type="text" placeholder="Buscar por nome, CPF ou escola..."
+                  value={pubSearch} onChange={e => setPubSearch(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <div className="max-h-56 overflow-y-auto space-y-1.5 mb-4">
+                  {candidatos
+                    .filter(c => {
+                      const q = pubSearch.toLowerCase();
+                      return !q || c.nome.toLowerCase().includes(q) || c.cpf.includes(q) || c.escola.toLowerCase().includes(q);
+                    })
+                    .filter(c => c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status !== 'PENDENTE')
+                    .map(c => {
+                      const hab = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
+                      const checked = pubSelectedIds.includes(c.id);
+                      return (
+                        <label key={c.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? 'border-blue-300 bg-blue-50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                          <input type="checkbox" checked={checked}
+                            onChange={() => setPubSelectedIds(prev => checked ? prev.filter(id => id !== c.id) : [...prev, c.id])}
+                            className="accent-blue-600 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-700 truncate">{c.nome}</p>
+                            <p className="text-xs text-gray-400 truncate">{c.escola}</p>
+                          </div>
+                          <span className={`text-xs font-semibold flex-shrink-0 ${hab?.status === 'APROVADO' ? 'text-green-600' : 'text-red-600'}`}>
+                            {hab?.status === 'APROVADO' ? 'Habilitado' : 'Inabilitado'}
+                          </span>
+                        </label>
+                      );
+                    })}
+                </div>
+                <p className="text-xs text-gray-400 mb-4">{pubSelectedIds.length} candidato{pubSelectedIds.length !== 1 ? 's' : ''} selecionado{pubSelectedIds.length !== 1 ? 's' : ''}</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setPubStep('target')}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                    ← Voltar
+                  </button>
+                  <button onClick={confirmarPublicar} disabled={pubSelectedIds.length === 0}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-colors"
+                    style={{ background: '#001b3d' }}>
+                    Publicar para {pubSelectedIds.length} candidato{pubSelectedIds.length !== 1 ? 's' : ''}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1222,7 +1398,8 @@ export default function AdminPage() {
                 <div className="divide-y divide-gray-50">
                   {revisadosSlice.map(c => {
                     const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
-                    const cfg = getStatusCfg(etapa?.status ?? 'PENDENTE', 'INSCRICAO');
+                    const habEtapa = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
+                    const cfg = getStatusCfg(habEtapa?.status ?? etapa?.status ?? 'PENDENTE', 'HABILITACAO_DOCUMENTAL');
                     return (
                       <div key={c.id} className="px-6 py-4 flex items-center gap-4">
                         <div className="flex-1 min-w-0">
@@ -1254,13 +1431,6 @@ export default function AdminPage() {
                             className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
                             Reanalisar
                           </button>
-                          {etapa?.status === 'APROVADO' && (
-                            <button onClick={() => { setSelected(c); setEditingEtapa(null); }}
-                              className="px-4 py-2 rounded-lg text-xs font-bold text-white"
-                              style={{ background: '#001b3d' }}>
-                              Gerenciar Etapas
-                            </button>
-                          )}
                         </div>
                       </div>
                     );

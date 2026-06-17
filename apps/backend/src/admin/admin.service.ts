@@ -351,15 +351,15 @@ export class AdminService implements OnModuleInit {
     return { notificados };
   }
 
-  async getHomologacaoStatus(): Promise<{ publicada: boolean }> {
-    const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'homologacao_publicada' } });
-    return { publicada: cfg?.value === 'true' };
+  async getHomologacaoStatus(): Promise<{ publicada: boolean; link?: string }> {
+    const [cfg, cfgLink] = await Promise.all([
+      this.prisma.systemConfig.findUnique({ where: { key: 'homologacao_publicada' } }),
+      this.prisma.systemConfig.findUnique({ where: { key: 'homologacao_link_diario' } }),
+    ]);
+    return { publicada: cfg?.value === 'true', link: cfgLink?.value ?? undefined };
   }
 
-  async publicarHomologacao(linkDiario?: string): Promise<{ ok: boolean; enviados: number }> {
-    const jaPublicada = await this.getHomologacaoStatus();
-    if (jaPublicada.publicada) return { ok: true, enviados: 0 };
-
+  async publicarHomologacao(linkDiario?: string, candidatoIds?: string[], titulo?: string): Promise<{ ok: boolean; enviados: number }> {
     await this.prisma.systemConfig.upsert({
       where: { key: 'homologacao_publicada' },
       update: { value: 'true' },
@@ -374,17 +374,34 @@ export class AdminService implements OnModuleInit {
       });
     }
 
+    const whereClause = candidatoIds && candidatoIds.length > 0
+      ? { candidato: { id: { in: candidatoIds } } }
+      : {};
+
     const inscricoes = await this.prisma.inscricao.findMany({
+      where: whereClause,
       include: {
-        candidato: { select: { nome: true, email: true } },
+        candidato: { select: { id: true, nome: true, email: true } },
         etapas: { where: { etapa: 'HABILITACAO_DOCUMENTAL' } },
       },
     });
 
     let enviados = 0;
+    const nomesEnviados: string[] = [];
     for (const insc of inscricoes) {
       const etapa = insc.etapas[0];
-      if (!etapa || etapa.status === 'PENDENTE') continue;
+      if (!etapa) continue;
+
+      // Publica o snapshot: copia status e observacao para os campos publicados
+      await this.prisma.etapaStatus.update({
+        where: { id: etapa.id },
+        data: {
+          statusPublicado: etapa.status,
+          observacaoPublicada: etapa.observacao ?? null,
+        },
+      });
+
+      if (etapa.status === 'PENDENTE') continue;
       const habilitado = etapa.status === 'APROVADO';
       await this.mail.enviarResultadoHomologacao({
         nome: insc.candidato.nome,
@@ -394,8 +411,28 @@ export class AdminService implements OnModuleInit {
         linkDiario,
       });
       enviados++;
+      nomesEnviados.push(insc.candidato.nome);
     }
+
+    const tipo = candidatoIds && candidatoIds.length > 0 ? 'especifico' : 'todos';
+    await this.prisma.homologacaoPublicacao.create({
+      data: {
+        tipo,
+        titulo: titulo || null,
+        link: linkDiario || null,
+        enviados,
+        nomes: tipo === 'especifico' ? nomesEnviados.join(', ') : undefined,
+      },
+    });
+
     return { ok: true, enviados };
+  }
+
+  async getPublicacoes(): Promise<{ id: string; createdAt: Date; tipo: string; enviados: number; nomes?: string | null }[]> {
+    return this.prisma.homologacaoPublicacao.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
   }
 
   async despublicarHomologacao(): Promise<{ ok: boolean }> {

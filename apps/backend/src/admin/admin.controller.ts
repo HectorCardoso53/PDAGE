@@ -95,15 +95,20 @@ export class AdminController {
     return this.adminService.notificarSemDocumentos();
   }
 
+  @Get('homologacao/publicacoes')
+  getPublicacoes() {
+    return this.adminService.getPublicacoes();
+  }
+
   @Get('homologacao/status')
   getHomologacaoStatus() {
     return this.adminService.getHomologacaoStatus();
   }
 
   @Post('homologacao/publicar')
-  publicarHomologacao(@Req() req: any, @Body() body: { linkDiario?: string }) {
+  publicarHomologacao(@Req() req: any, @Body() body: { linkDiario?: string; candidatoIds?: string[]; titulo?: string }) {
     if (!this.isMasterOrAdmin(req.user)) throw new ForbiddenException('Acesso restrito.');
-    return this.adminService.publicarHomologacao(body?.linkDiario);
+    return this.adminService.publicarHomologacao(body?.linkDiario, body?.candidatoIds, body?.titulo);
   }
 
   @Post('homologacao/despublicar')

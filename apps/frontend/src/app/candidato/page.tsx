@@ -19,8 +19,10 @@ type Etapa = {
   tipo: string;
   label: string;
   status: StatusEtapa;
+  statusPublicado: StatusEtapa | null;
   pontuacao: number | null;
   observacao: string | null;
+  observacaoPublicada: string | null;
   recurso: string | null;
   docChecks: string | null;
 };
@@ -258,10 +260,13 @@ export default function CandidatoPage() {
   const { candidato, inscricao, etapas } = data;
 
   const inscricaoEtapa = etapas.find(e => e.tipo === 'INSCRICAO');
-  const inscricaoReprovada = inscricaoEtapa?.status === 'REPROVADO';
+  const inscricaoStatusPublicado = homologacaoPublicada
+    ? (inscricaoEtapa?.statusPublicado ?? inscricaoEtapa?.status ?? 'PENDENTE')
+    : 'PENDENTE';
+  const inscricaoReprovada = inscricaoStatusPublicado === 'REPROVADO';
   const ETAPAS_PROCESSO = ['AVALIACAO_COGNITIVA', 'QUALIFICACAO_CURRICULAR', 'PLANO_GESTAO', 'RESULTADO_FINAL', 'CERTIFICACAO'];
   const etapasProcesso = etapas.filter(e => ETAPAS_PROCESSO.includes(e.tipo));
-  const allPending = etapas.every(e => e.status === 'PENDENTE');
+  const allPending = !homologacaoPublicada || etapas.every(e => e.status === 'PENDENTE');
   const aprovadas  = etapasProcesso.filter(e => e.status === 'APROVADO').length;
   const reprovadas = etapasProcesso.filter(e => e.status === 'REPROVADO').length;
 
@@ -286,16 +291,16 @@ export default function CandidatoPage() {
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
 
         {/* Notificação: inscrição reprovada — só aparece após homologação publicada */}
-        {homologacaoPublicada && inscricaoReprovada && (
+        {inscricaoReprovada && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-5 flex gap-4 shadow-sm">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-100">
               <XCircle className="w-5 h-5 text-red-600" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-red-700 mb-1">Inscrição reprovada pela comissão</p>
-              {inscricaoEtapa?.observacao ? (
+              {(inscricaoEtapa?.observacaoPublicada ?? inscricaoEtapa?.observacao) ? (
                 <p className="text-sm text-red-600 leading-relaxed">
-                  <span className="font-semibold">Justificativa: </span>{inscricaoEtapa.observacao}
+                  <span className="font-semibold">Justificativa: </span>{inscricaoEtapa?.observacaoPublicada ?? inscricaoEtapa?.observacao}
                 </p>
               ) : (
                 <p className="text-sm text-red-500">Entre em contato com a secretaria para mais informações.</p>
@@ -428,27 +433,39 @@ export default function CandidatoPage() {
 
           {etapas.map((etapa) => {
             const Icon = ETAPA_ICONS[etapa.tipo] ?? FileText;
-            const isPendente = etapa.status === 'PENDENTE';
+
+            const ehHabilitacaoOculta = etapa.tipo === 'HABILITACAO_DOCUMENTAL' || etapa.tipo === 'INSCRICAO';
+
+            // Para INSCRICAO e HABILITACAO: mostra snapshot publicado; antes de publicar, oculta
+            const statusVisivel: StatusEtapa = ehHabilitacaoOculta
+              ? (homologacaoPublicada ? (etapa.statusPublicado ?? etapa.status) : 'PENDENTE')
+              : etapa.status;
+
+            const observacaoVisivel = ehHabilitacaoOculta
+              ? (homologacaoPublicada ? (etapa.observacaoPublicada ?? etapa.observacao) : null)
+              : etapa.observacao;
+
+            const isPendente = statusVisivel === 'PENDENTE';
 
             const cfgBase = {
               PENDENTE:   { label: 'Aguardando habilitação', color: 'text-gray-400',  bg: 'bg-gray-50',   border: 'border-gray-100',  icon: Lock },
               EM_ANALISE: { label: 'Em análise',             color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', icon: Clock },
               APROVADO:   { label: 'Habilitado',             color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
               REPROVADO:  { label: 'Inabilitado',            color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
-            }[etapa.status];
+            }[statusVisivel];
 
             const cfg = (() => {
+              if (etapa.tipo === 'INSCRICAO' && !homologacaoPublicada)
+                return { label: 'Inscrito', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: CheckCircle };
               if (etapa.tipo === 'INSCRICAO')
                 return { ...cfgBase, label: 'Inscrito', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: CheckCircle };
-              if (etapa.tipo === 'HABILITACAO_DOCUMENTAL' && !homologacaoPublicada)
-                return { label: 'Em análise', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', icon: Clock };
               if (etapa.tipo === 'RESULTADO_FINAL')
                 return { label: 'Aguardando divulgação', color: 'text-gray-400', bg: 'bg-gray-50', border: 'border-gray-100', icon: Lock };
               return cfgBase;
             })();
 
             const StatusIcon = cfg.icon;
-            const isReprovado = etapa.status === 'REPROVADO';
+            const isReprovado = statusVisivel === 'REPROVADO';
             const isExpanded = expandedEtapa === etapa.tipo;
 
             const etapaDocs = etapa.tipo === 'HABILITACAO_DOCUMENTAL'
@@ -573,7 +590,7 @@ export default function CandidatoPage() {
                     {etapaDocs.length > 0 && (() => {
                       const checks: Record<string, boolean> = etapa.docChecks
                         ? JSON.parse(etapa.docChecks) : {};
-                      const hasChecks = Object.keys(checks).length > 0;
+                      const hasChecks = homologacaoPublicada && Object.keys(checks).length > 0;
                       return (
                         <div>
                           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Documentos enviados</p>
@@ -617,10 +634,10 @@ export default function CandidatoPage() {
                     })()}
 
                     {/* Observação da comissão (etapas aprovadas/em análise) */}
-                    {etapa.observacao && !isReprovado && (
+                    {observacaoVisivel && !isReprovado && (
                       <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
                         <p className="text-xs font-semibold text-blue-600 mb-0.5">Observação da comissão:</p>
-                        <p className="text-sm text-blue-700">{etapa.observacao}</p>
+                        <p className="text-sm text-blue-700">{observacaoVisivel}</p>
                       </div>
                     )}
 
@@ -636,12 +653,12 @@ export default function CandidatoPage() {
                   </div>
                 )}
 
-                {/* Justificativa de inabilitação — oculta até homologação publicada */}
-                {isReprovado && etapa.observacao && (etapa.tipo !== 'HABILITACAO_DOCUMENTAL' || homologacaoPublicada) && (etapa.tipo !== 'INSCRICAO' || homologacaoPublicada) && (
+                {/* Justificativa de inabilitação — usa sempre o snapshot publicado */}
+                {isReprovado && observacaoVisivel && (
                   <div className="border-t border-red-100 px-4 pb-4 pt-3">
                     <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
                       <p className="text-xs font-semibold text-red-600 mb-0.5">Justificativa da comissão:</p>
-                      <p className="text-sm text-red-700 leading-relaxed">{etapa.observacao}</p>
+                      <p className="text-sm text-red-700 leading-relaxed">{observacaoVisivel}</p>
                     </div>
                   </div>
                 )}

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import ProrogacaoPopup from '@/components/ProrogacaoPopup';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -77,8 +76,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={inter.variable}>
       <body className="min-h-screen antialiased" style={{ backgroundColor: '#f4f6f8', color: '#333333' }}>
-        <ProrogacaoPopup />
-        {children}
+{children}
       </body>
     </html>
   );
