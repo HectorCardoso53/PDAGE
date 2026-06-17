@@ -258,6 +258,7 @@ export default function AdminPage() {
   const [pubSearch, setPubSearch] = useState('');
   const [pubTitulo, setPubTitulo] = useState('');
   const [reviewToast, setReviewToast] = useState<{ nome: string; acao: 'habilitado' | 'inabilitado' } | null>(null);
+  const [historicoSearch, setHistoricoSearch] = useState('');
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -678,8 +679,14 @@ export default function AdminPage() {
   const pendingTotalPages = Math.max(1, Math.ceil(pendingRevisao.length / PAGE_SIZE));
   const pendingSlice = pendingRevisao.slice((pendingPage - 1) * PAGE_SIZE, pendingPage * PAGE_SIZE);
 
-  const revisadosTotalPages = Math.max(1, Math.ceil(revisados.length / PAGE_SIZE));
-  const revisadosSlice = revisados.slice((revisadosPage - 1) * PAGE_SIZE, revisadosPage * PAGE_SIZE);
+  const revisadosFiltrados = historicoSearch.trim()
+    ? revisados.filter(c => {
+        const q = historicoSearch.toLowerCase();
+        return c.nome.toLowerCase().includes(q) || c.cpf.includes(q) || c.escola.toLowerCase().includes(q);
+      })
+    : revisados;
+  const revisadosTotalPages = Math.max(1, Math.ceil(revisadosFiltrados.length / PAGE_SIZE));
+  const revisadosSlice = revisadosFiltrados.slice((revisadosPage - 1) * PAGE_SIZE, revisadosPage * PAGE_SIZE);
 
   const handlePrintReport = () => {
     const comResultado = candidatos
@@ -1385,15 +1392,24 @@ export default function AdminPage() {
             {/* Histórico */}
             {revisados.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-blue-100 flex items-center justify-between" style={{ background: '#001b3d' }}>
-                  <div>
-                    <h2 className="text-lg font-extrabold text-white tracking-wide">Histórico</h2>
-                    <p className="text-xs text-blue-200 mt-0.5">Inscrições já revisadas</p>
+                <div className="px-6 py-4 border-b border-blue-100" style={{ background: '#001b3d' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h2 className="text-lg font-extrabold text-white tracking-wide">Histórico</h2>
+                      <p className="text-xs text-blue-200 mt-0.5">Inscrições já revisadas</p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-bold text-white">
+                      <span>Habilitados: {totalHabilitados}</span>
+                      <span>Inabilitados: {totalInabilitados}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-xs font-bold text-white">
-                    <span>Habilitados: {totalHabilitados}</span>
-                    <span>Inabilitados: {totalInabilitados}</span>
-                  </div>
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome, CPF ou escola..."
+                    value={historicoSearch}
+                    onChange={e => { setHistoricoSearch(e.target.value); setRevisadosPage(1); }}
+                    className="w-full px-3 py-2 rounded-lg text-sm text-gray-800 bg-white/90 placeholder-gray-400 border-0 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
                 </div>
                 <div className="divide-y divide-gray-50">
                   {revisadosSlice.map(c => {
@@ -1439,7 +1455,7 @@ export default function AdminPage() {
                 {revisadosTotalPages > 1 && (
                   <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
                     <span className="text-xs text-gray-400">
-                      Página {revisadosPage} de {revisadosTotalPages} · {revisados.length} inscrições
+                      Página {revisadosPage} de {revisadosTotalPages} · {revisadosFiltrados.length} inscrições
                     </span>
                     <div className="flex gap-2">
                       <button onClick={() => setRevisadosPage(p => Math.max(1, p - 1))} disabled={revisadosPage === 1}
