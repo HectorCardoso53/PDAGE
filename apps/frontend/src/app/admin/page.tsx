@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   LogOut, CheckCircle, Clock, XCircle,
-  FileText, Brain, GraduationCap, ClipboardList, BarChart, Award, X, UserCheck, Lock, RefreshCw,
+  FileText, Brain, GraduationCap, ClipboardList, BarChart, Award, X, UserCheck, Lock, RefreshCw, ChevronDown,
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '@/lib/api';
 
@@ -236,7 +236,7 @@ export default function AdminPage() {
   });
   const [acertos, setAcertos] = useState({ baixo: '', medio: '', alto: '' });
   const [saving, setSaving] = useState(false);
-  const activeTab = 'revisao' as const;
+  const [activeSection, setActiveSection] = useState<'inscricao' | 'prova'>('inscricao');
   const [reviewing, setReviewing] = useState<AdminCandidato | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject' | null>(null);
@@ -273,6 +273,9 @@ export default function AdminPage() {
   const [historicoSearch, setHistoricoSearch] = useState('');
   const [provaPage, setProvaPage] = useState(1);
   const [provaSearch, setProvaSearch] = useState('');
+  const [secaoPendentesAberta, setSecaoPendentesAberta] = useState(true);
+  const [secaoProvaAberta, setSecaoProvaAberta] = useState(true);
+  const [secaoHistoricoAberta, setSecaoHistoricoAberta] = useState(true);
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -1353,81 +1356,85 @@ export default function AdminPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
 
-        {/* Tab navigation — aba Candidatos oculta por enquanto */}
-        {/* <div className="flex gap-1 bg-white rounded-xl border border-gray-100 shadow-sm p-1 w-fit">
+        {/* ── Navegação por Fase ─────────────────────────────────────────── */}
+        <div className="flex gap-1 bg-white rounded-xl border border-gray-100 shadow-sm p-1 w-fit">
           {([
-            { key: 'candidatos', label: 'Candidatos' },
-            { key: 'revisao',    label: `Revisão de Inscrições${pendingRevisao.length > 0 ? ` (${pendingRevisao.length})` : ''}` },
-          ] as const).map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                activeTab === tab.key
-                  ? 'text-white'
-                  : 'text-gray-500 hover:text-gray-700'
+            { key: 'inscricao' as const, label: 'Inscrição e Validação', badge: pendingRevisao.length },
+            { key: 'prova'     as const, label: 'Prova Objetiva',        badge: aguardandoProva.length },
+          ]).map(tab => (
+            <button key={tab.key} onClick={() => setActiveSection(tab.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                activeSection === tab.key ? 'text-white' : 'text-gray-500 hover:text-gray-700'
               }`}
-              style={activeTab === tab.key ? { background: '#001b3d' } : {}}>
+              style={activeSection === tab.key ? { background: '#001b3d' } : {}}>
               {tab.label}
+              {tab.badge > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  activeSection === tab.key ? 'bg-yellow-400 text-black' : 'bg-gray-200 text-gray-600'
+                }`}>{tab.badge}</span>
+              )}
             </button>
           ))}
-        </div> */}
+        </div>
 
-        {/* ── ABA: REVISÃO DE INSCRIÇÕES ───────────────────────────────── */}
-        {activeTab === 'revisao' && (
+        {/* ── ABA 1: INSCRIÇÃO E VALIDAÇÃO ─────────────────────────────── */}
+        {activeSection === 'inscricao' && (
           <div className="space-y-4">
 
             {/* Pendentes */}
+            {pendingRevisao.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-blue-100 flex items-center justify-between" style={{ background: '#001b3d' }}>
+              <button onClick={() => setSecaoPendentesAberta(o => !o)}
+                className="w-full px-6 py-4 border-b border-blue-100 flex items-center justify-between text-left" style={{ background: '#001b3d' }}>
                 <div>
                   <h2 className="text-lg font-extrabold text-white tracking-wide">Aguardando Análise</h2>
                   <p className="text-xs text-blue-200 mt-0.5">Inscrições pendentes de validação</p>
                 </div>
-                <span className="text-xs font-bold text-white">Em análise: {pendingRevisao.length}</span>
-              </div>
-              {pendingRevisao.length === 0 ? (
-                <div className="py-10 text-center text-gray-400 text-sm">Nenhuma inscrição pendente.</div>
-              ) : (
-                <div className="divide-y divide-gray-50">
-                  {pendingSlice.map(c => {
-                    const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
-                    const cfg = getStatusCfg(etapa?.status ?? 'PENDENTE', 'INSCRICAO');
-                    return (
-                      <div key={c.id} className="px-6 py-4 flex items-center gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800">{c.nome}</p>
-                          <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
-                          </p>
-                          {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
-                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 mt-0.5">
-                              <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
-                            </p>
-                          )}
-                          {locks[c.id] && (
-                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
-                              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-                              Em análise por {locks[c.id]}
-                            </p>
-                          )}
-                        </div>
-                        <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
-                          {cfg.label}
-                        </span>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <button
-                            onClick={() => openReview(c)}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-opacity ${locks[c.id] ? 'opacity-60' : ''}`}
-                            style={{ background: locks[c.id] ? '#92400e' : '#001b3d' }}>
-                            {locks[c.id] ? 'Em análise…' : 'Analisar'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-white">Em análise: {pendingRevisao.length}</span>
+                  <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${secaoPendentesAberta ? 'rotate-180' : ''}`} />
                 </div>
-              )}
-              {pendingTotalPages > 1 && (
+              </button>
+              {secaoPendentesAberta && <div className="divide-y divide-gray-50">
+                {pendingSlice.map(c => {
+                  const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
+                  const cfg = getStatusCfg(etapa?.status ?? 'PENDENTE', 'INSCRICAO');
+                  return (
+                    <div key={c.id} className="px-6 py-4 flex items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-800">{c.nome}</p>
+                        <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
+                        </p>
+                        {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
+                          <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 mt-0.5">
+                            <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
+                          </p>
+                        )}
+                        {locks[c.id] && (
+                          <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
+                            Em análise por {locks[c.id]}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                        {cfg.label}
+                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => openReview(c)}
+                          className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-opacity ${locks[c.id] ? 'opacity-60' : ''}`}
+                          style={{ background: locks[c.id] ? '#92400e' : '#001b3d' }}>
+                          {locks[c.id] ? 'Em análise…' : 'Analisar'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>}
+              {secaoPendentesAberta && pendingTotalPages > 1 && (
                 <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
                   <span className="text-xs text-gray-400">
                     Página {pendingPage} de {pendingTotalPages} · {pendingRevisao.length} inscrições
@@ -1445,189 +1452,206 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+            )}
 
-            {/* ── Prova Objetiva ─────────────────────────────────────────── */}
-            {(aguardandoProva.length > 0 || provaRealizada.length > 0) && (
+
+
+            {/* Histórico */}
+            {revisados.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-yellow-200 flex items-center justify-between" style={{ background: '#001b3d' }}>
-                  <div>
-                    <h2 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-yellow-300" />
-                      Prova Objetiva
-                    </h2>
-                    <p className="text-xs text-blue-200 mt-0.5">1ª fase — avaliação de conhecimentos</p>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-bold text-white">
-                    <span className="text-yellow-300">Aguardando: {aguardandoProva.length}</span>
-                    <span>Realizadas: {provaRealizada.length}</span>
-                  </div>
-                </div>
-
-                {/* Aguardando avaliação */}
-                {aguardandoProva.length > 0 && (
-                  <div>
-                    <p className="px-6 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-yellow-50 border-b border-yellow-100">
-                      Aguardando Lançamento
-                    </p>
-                    <div className="divide-y divide-gray-50">
-                      {aguardandoProva.map(c => (
-                        <div key={c.id} className="px-6 py-4 flex items-center gap-4">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-800">{c.nome}</p>
-                            <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">{c.municipio}</p>
-                          </div>
-                          <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-yellow-50 text-yellow-700 border-yellow-200 flex-shrink-0">
-                            Pendente
-                          </span>
-                          <button
-                            onClick={() => openProva(c)}
-                            className="px-4 py-2 rounded-lg text-xs font-bold text-white flex-shrink-0"
-                            style={{ background: '#001b3d' }}>
-                            Lançar Nota
-                          </button>
-                        </div>
-                      ))}
+                <div className="border-b border-blue-100" style={{ background: '#001b3d' }}>
+                  <button onClick={() => setSecaoHistoricoAberta(o => !o)}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left">
+                    <div>
+                      <h2 className="text-lg font-extrabold text-white tracking-wide">Histórico</h2>
+                      <p className="text-xs text-blue-200 mt-0.5">Inscrições já revisadas</p>
                     </div>
-                  </div>
-                )}
-
-                {/* Realizadas */}
-                {provaRealizada.length > 0 && (
-                  <div className={aguardandoProva.length > 0 ? 'border-t border-gray-100' : ''}>
-                    <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-3">
-                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex-1">
-                        Notas Lançadas
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 text-xs font-bold text-white">
+                        <span>Habilitados: {totalHabilitados}</span>
+                        <span>Inabilitados: {totalInabilitados}</span>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${secaoHistoricoAberta ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                  {secaoHistoricoAberta && (
+                    <div className="px-6 pb-3">
                       <input
                         type="text"
-                        placeholder="Buscar..."
-                        value={provaSearch}
-                        onChange={e => { setProvaSearch(e.target.value); setProvaPage(1); }}
-                        className="px-3 py-1.5 rounded-lg text-xs text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-200 w-48"
+                        placeholder="Buscar por nome, CPF ou escola..."
+                        value={historicoSearch}
+                        onChange={e => { setHistoricoSearch(e.target.value); setRevisadosPage(1); }}
+                        className="w-full px-3 py-2 rounded-lg text-sm text-gray-800 bg-white/90 placeholder-gray-400 border-0 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                       />
                     </div>
+                  )}
+                </div>
+                {secaoHistoricoAberta && (
+                  <>
                     <div className="divide-y divide-gray-50">
-                      {provaSlice.map(c => {
-                        const ava = c.etapas.find(e => e.etapa === 'AVALIACAO_COGNITIVA');
-                        const cfg = getStatusCfg(ava?.status ?? 'PENDENTE', 'AVALIACAO_COGNITIVA');
+                      {revisadosSlice.map(c => {
+                        const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
+                        const habEtapa = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
+                        const cfg = getStatusCfg(habEtapa?.status ?? etapa?.status ?? 'PENDENTE', 'HABILITACAO_DOCUMENTAL');
                         return (
                           <div key={c.id} className="px-6 py-4 flex items-center gap-4">
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-gray-700">{c.nome}</p>
                               <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
-                              {ava?.pontuacao !== null && ava?.pontuacao !== undefined && (
-                                <p className="text-xs font-bold mt-0.5" style={{ color: '#001b3d' }}>
-                                  Nota: {ava.pontuacao} / 100 pts
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
+                              </p>
+                              {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
+                                <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 mt-0.5">
+                                  <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
                                 </p>
+                              )}
+                              {locks[c.id] && (
+                                <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
+                                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
+                                  Em análise por {locks[c.id]}
+                                </p>
+                              )}
+                              {etapa?.observacao && (
+                                <p className="text-xs text-gray-400 mt-0.5 italic">"{etapa.observacao}"</p>
                               )}
                             </div>
                             <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                               {cfg.label}
                             </span>
-                            <button onClick={() => openProva(c)}
-                              className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0">
-                              Rever
-                            </button>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button onClick={() => openReview(c)}
+                                className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                                Reanalisar
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
-                    {provaTotalPages > 1 && (
+                    {revisadosTotalPages > 1 && (
                       <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
-                        <span className="text-xs text-gray-400">Página {provaPage} de {provaTotalPages}</span>
+                        <span className="text-xs text-gray-400">
+                          Página {revisadosPage} de {revisadosTotalPages} · {revisadosFiltrados.length} inscrições
+                        </span>
                         <div className="flex gap-2">
-                          <button onClick={() => setProvaPage(p => Math.max(1, p - 1))} disabled={provaPage === 1}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors">
+                          <button onClick={() => setRevisadosPage(p => Math.max(1, p - 1))} disabled={revisadosPage === 1}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                             ← Anterior
                           </button>
-                          <button onClick={() => setProvaPage(p => Math.min(provaTotalPages, p + 1))} disabled={provaPage === provaTotalPages}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors">
+                          <button onClick={() => setRevisadosPage(p => Math.min(revisadosTotalPages, p + 1))} disabled={revisadosPage === revisadosTotalPages}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                             Próxima →
                           </button>
                         </div>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
+          </div>
+        )}
 
-            {/* Histórico */}
-            {revisados.length > 0 && (
+        {/* ── ABA 2: PROVA OBJETIVA ────────────────────────────────────── */}
+        {activeSection === 'prova' && (
+          <div className="space-y-4">
+
+            {/* Aguardando lançamento */}
+            {aguardandoProva.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-blue-100" style={{ background: '#001b3d' }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h2 className="text-lg font-extrabold text-white tracking-wide">Histórico</h2>
-                      <p className="text-xs text-blue-200 mt-0.5">Inscrições já revisadas</p>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs font-bold text-white">
-                      <span>Habilitados: {totalHabilitados}</span>
-                      <span>Inabilitados: {totalInabilitados}</span>
-                    </div>
+                <div className="px-6 py-4 border-b border-yellow-200 flex items-center justify-between" style={{ background: '#001b3d' }}>
+                  <div>
+                    <h2 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-yellow-300" />
+                      Aguardando Lançamento
+                    </h2>
+                    <p className="text-xs text-blue-200 mt-0.5">Candidatos habilitados com nota pendente</p>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Buscar por nome, CPF ou escola..."
-                    value={historicoSearch}
-                    onChange={e => { setHistoricoSearch(e.target.value); setRevisadosPage(1); }}
-                    className="w-full px-3 py-2 rounded-lg text-sm text-gray-800 bg-white/90 placeholder-gray-400 border-0 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                  />
+                  <span className="text-xs font-bold text-yellow-300">{aguardandoProva.length} candidato{aguardandoProva.length !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="divide-y divide-gray-50">
-                  {revisadosSlice.map(c => {
-                    const etapa = c.etapas.find(e => e.etapa === 'INSCRICAO');
-                    const habEtapa = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
-                    const cfg = getStatusCfg(habEtapa?.status ?? etapa?.status ?? 'PENDENTE', 'HABILITACAO_DOCUMENTAL');
+                  {aguardandoProva.map(c => (
+                    <div key={c.id} className="px-6 py-4 flex items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-800">{c.nome}</p>
+                        <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{c.municipio}</p>
+                      </div>
+                      <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-yellow-50 text-yellow-700 border-yellow-200 flex-shrink-0">
+                        Pendente
+                      </span>
+                      <button onClick={() => openProva(c)}
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-white flex-shrink-0"
+                        style={{ background: '#001b3d' }}>
+                        Lançar Nota
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Histórico de notas */}
+            {provaRealizada.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="border-b border-blue-100" style={{ background: '#001b3d' }}>
+                  <div className="px-6 py-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
+                        <Brain className="w-5 h-5 text-blue-300" />
+                        Histórico de Notas
+                      </h2>
+                      <p className="text-xs text-blue-200 mt-0.5">Candidatos com nota lançada</p>
+                    </div>
+                    <span className="text-xs font-bold text-white">{provaRealizada.length} avaliado{provaRealizada.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="px-6 pb-3">
+                    <input
+                      type="text"
+                      placeholder="Buscar por nome, CPF ou escola..."
+                      value={provaSearch}
+                      onChange={e => { setProvaSearch(e.target.value); setProvaPage(1); }}
+                      className="w-full px-3 py-2 rounded-lg text-sm text-gray-800 bg-white/90 placeholder-gray-400 border-0 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                  </div>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {provaSlice.map(c => {
+                    const ava = c.etapas.find(e => e.etapa === 'AVALIACAO_COGNITIVA');
+                    const cfg = getStatusCfg(ava?.status ?? 'PENDENTE', 'AVALIACAO_COGNITIVA');
                     return (
                       <div key={c.id} className="px-6 py-4 flex items-center gap-4">
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-700">{c.nome}</p>
                           <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            Inscrito em {c.inscricao ? new Date(c.inscricao.createdAt).toLocaleDateString('pt-BR') : '—'}
-                          </p>
-                          {new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 2 * 60 * 1000 && (
-                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 mt-0.5">
-                              <RefreshCw className="w-3 h-3" /> Atualizou dados em {new Date(c.updatedAt).toLocaleString('pt-BR')}
+                          {ava?.pontuacao !== null && ava?.pontuacao !== undefined && (
+                            <p className="text-xs font-bold mt-0.5" style={{ color: '#001b3d' }}>
+                              Nota: {ava.pontuacao} / 100 pts
                             </p>
-                          )}
-                          {locks[c.id] && (
-                            <p className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 mt-0.5">
-                              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-                              Em análise por {locks[c.id]}
-                            </p>
-                          )}
-                          {etapa?.observacao && (
-                            <p className="text-xs text-gray-400 mt-0.5 italic">"{etapa.observacao}"</p>
                           )}
                         </div>
                         <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
                           {cfg.label}
                         </span>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <button onClick={() => openReview(c)}
-                            className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
-                            Reanalisar
-                          </button>
-                        </div>
+                        <button onClick={() => openProva(c)}
+                          className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0">
+                          Rever
+                        </button>
                       </div>
                     );
                   })}
                 </div>
-                {revisadosTotalPages > 1 && (
+                {provaTotalPages > 1 && (
                   <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
-                    <span className="text-xs text-gray-400">
-                      Página {revisadosPage} de {revisadosTotalPages} · {revisadosFiltrados.length} inscrições
-                    </span>
+                    <span className="text-xs text-gray-400">Página {provaPage} de {provaTotalPages}</span>
                     <div className="flex gap-2">
-                      <button onClick={() => setRevisadosPage(p => Math.max(1, p - 1))} disabled={revisadosPage === 1}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      <button onClick={() => setProvaPage(p => Math.max(1, p - 1))} disabled={provaPage === 1}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors">
                         ← Anterior
                       </button>
-                      <button onClick={() => setRevisadosPage(p => Math.min(revisadosTotalPages, p + 1))} disabled={revisadosPage === revisadosTotalPages}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      <button onClick={() => setProvaPage(p => Math.min(provaTotalPages, p + 1))} disabled={provaPage === provaTotalPages}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors">
                         Próxima →
                       </button>
                     </div>
@@ -1635,6 +1659,15 @@ export default function AdminPage() {
                 )}
               </div>
             )}
+
+            {aguardandoProva.length === 0 && provaRealizada.length === 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-12 text-center">
+                <Brain className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">Nenhum candidato habilitado para a Prova Objetiva ainda.</p>
+                <p className="text-xs text-gray-300 mt-1">Candidatos aparecem aqui após habilitação documental aprovada.</p>
+              </div>
+            )}
+
           </div>
         )}
 
