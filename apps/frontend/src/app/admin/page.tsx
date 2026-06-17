@@ -110,7 +110,7 @@ const ETAPA_ICONS: Record<string, React.ElementType> = {
 const ETAPA_NOTES: Record<string, string> = {
   INSCRICAO: 'Valide os dados cadastrais do candidato e habilite ou inabilite a inscrição no processo seletivo.',
   HABILITACAO_DOCUMENTAL: 'Verifique os documentos enviados e confira se os dados abaixo correspondem ao cadastro.',
-  AVALIACAO_COGNITIVA: 'Insira a pontuação obtida pelo candidato na avaliação cognitiva realizada externamente.',
+  AVALIACAO_COGNITIVA: 'Informe os acertos por nível (Baixo: 0–5 · Médio: 0–5 · Alto: 0–10). A nota final é calculada automaticamente com base no peso de cada nível.',
   QUALIFICACAO_CURRICULAR: 'Avalie a formação acadêmica e o tempo de serviço do candidato.',
   PLANO_GESTAO: 'Analise o plano de gestão submetido pelo candidato e registre o resultado.',
   RESULTADO_FINAL: 'Defina o resultado final com base no desempenho em todas as etapas anteriores.',
@@ -223,6 +223,7 @@ export default function AdminPage() {
   const [editForm, setEditForm] = useState<{ status: StatusEtapa; pontuacao: string; observacao: string }>({
     status: 'PENDENTE', pontuacao: '', observacao: '',
   });
+  const [acertos, setAcertos] = useState({ baixo: '', medio: '', alto: '' });
   const [saving, setSaving] = useState(false);
   const activeTab = 'revisao' as const;
   const [reviewing, setReviewing] = useState<AdminCandidato | null>(null);
@@ -465,6 +466,14 @@ export default function AdminPage() {
       observacao: etapa.observacao ?? '',
     });
     setDocChecks(etapa.docChecks ? JSON.parse(etapa.docChecks) : {});
+    if (etapa.etapa === 'AVALIACAO_COGNITIVA') {
+      const parsed = etapa.docChecks ? JSON.parse(etapa.docChecks) : {};
+      setAcertos({
+        baixo: parsed._baixo != null ? String(parsed._baixo) : '',
+        medio: parsed._medio != null ? String(parsed._medio) : '',
+        alto:  parsed._alto  != null ? String(parsed._alto)  : '',
+      });
+    }
   };
 
   const handleSave = async (etapa: EtapaAdmin) => {
@@ -483,9 +492,20 @@ export default function AdminPage() {
     }
 
     const isHabilitacao = etapa.etapa === 'HABILITACAO_DOCUMENTAL';
-    const docChecksJson = isHabilitacao && Object.keys(docChecks).length > 0
-      ? JSON.stringify(docChecks)
-      : undefined;
+    const isAvaliacao = etapa.etapa === 'AVALIACAO_COGNITIVA';
+
+    let computedPontuacao = editForm.pontuacao;
+    let docChecksJson: string | undefined;
+
+    if (isHabilitacao && Object.keys(docChecks).length > 0) {
+      docChecksJson = JSON.stringify(docChecks);
+    } else if (isAvaliacao) {
+      const b = Math.min(5,  Math.max(0, Number(acertos.baixo) || 0));
+      const m = Math.min(5,  Math.max(0, Number(acertos.medio) || 0));
+      const a = Math.min(10, Math.max(0, Number(acertos.alto)  || 0));
+      computedPontuacao = String(b * 3 + m * 5 + a * 6);
+      docChecksJson = JSON.stringify({ _baixo: b, _medio: m, _alto: a });
+    }
 
     const t = localStorage.getItem('meritus_admin_token');
     try {
@@ -494,7 +514,7 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
         body: JSON.stringify({
           status: editForm.status,
-          pontuacao: editForm.pontuacao !== '' ? Number(editForm.pontuacao) : undefined,
+          pontuacao: computedPontuacao !== '' ? Number(computedPontuacao) : undefined,
           observacao: finalObservacao || undefined,
           ...(docChecksJson ? { docChecks: docChecksJson } : {}),
         }),
@@ -504,7 +524,7 @@ export default function AdminPage() {
       const updated: EtapaAdmin = {
         ...etapa,
         status: editForm.status,
-        pontuacao: editForm.pontuacao !== '' ? Number(editForm.pontuacao) : null,
+        pontuacao: computedPontuacao !== '' ? Number(computedPontuacao) : null,
         observacao: editForm.observacao || null,
         docChecks: docChecksJson ?? etapa.docChecks,
       };
@@ -1722,8 +1742,10 @@ export default function AdminPage() {
               {selected.etapas.map((etapa, idx) => {
                 const Icon = ETAPA_ICONS[etapa.etapa] ?? FileText;
                 const inscricaoAprovada = selected.etapas.find(e => e.etapa === 'INSCRICAO')?.status === 'APROVADO';
+                const habilitacaoAprovada = selected.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL')?.status === 'APROVADO';
                 const isLocked = etapa.etapa === 'INSCRICAO' ? false
                   : etapa.etapa === 'HABILITACAO_DOCUMENTAL' ? !inscricaoAprovada
+                  : etapa.etapa === 'AVALIACAO_COGNITIVA' ? !habilitacaoAprovada
                   : true;
                 const cfg = getStatusCfg(etapa.status, etapa.etapa);
                 const StatusIcon = cfg.icon;
@@ -1845,6 +1867,54 @@ export default function AdminPage() {
                                 })
                               )}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Prova Objetiva — AVALIACAO_COGNITIVA */}
+                        {etapa.etapa === 'AVALIACAO_COGNITIVA' && (
+                          <div className="px-4 pb-3">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                              <Brain className="w-3.5 h-3.5" />
+                              Acertos por Nível — Prova Objetiva
+                            </p>
+                            <div className="space-y-2">
+                              {([
+                                { key: 'baixo', label: 'Nível Baixo', sub: 'Dim. A (Conhec. Profissional) + B (Pessoal)', max: 5, peso: 3 },
+                                { key: 'medio', label: 'Nível Médio', sub: 'Dim. C (Administrativa e Financeira)',          max: 5, peso: 5 },
+                                { key: 'alto',  label: 'Nível Alto',  sub: 'Dim. D (Pedagógica)',                           max: 10, peso: 6 },
+                              ] as const).map(({ key, label, sub, max, peso }) => {
+                                const val = acertos[key];
+                                const pts = (Number(val) || 0) * peso;
+                                return (
+                                  <div key={key} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-100 bg-gray-50">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-semibold text-gray-700">{label}</p>
+                                      <p className="text-[10px] text-gray-400 truncate">{sub} · peso {peso} · máx. {max}</p>
+                                    </div>
+                                    <input
+                                      type="number" min={0} max={max}
+                                      value={val}
+                                      onChange={e => {
+                                        const n = Math.min(max, Math.max(0, Number(e.target.value)));
+                                        setAcertos(prev => ({ ...prev, [key]: isNaN(n) ? '' : String(n) }));
+                                      }}
+                                      className="w-16 text-center px-2 py-1.5 rounded-lg border border-gray-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                      placeholder="0"
+                                    />
+                                    <span className="text-xs font-bold text-gray-500 w-14 text-right">{pts} pts</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {(() => {
+                              const total = (Number(acertos.baixo) || 0) * 3 + (Number(acertos.medio) || 0) * 5 + (Number(acertos.alto) || 0) * 6;
+                              return (
+                                <div className="mt-2 flex justify-between items-center px-4 py-2.5 rounded-lg" style={{ background: '#001b3d' }}>
+                                  <span className="text-xs font-semibold text-white/70">Total calculado</span>
+                                  <span className="text-base font-bold text-white">{total} <span className="text-xs font-normal text-white/60">/ 100 pts</span></span>
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
 
