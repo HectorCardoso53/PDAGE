@@ -1,0 +1,884 @@
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import {
+  FileText, Brain, GraduationCap, ClipboardList,
+  BarChart, Award, LogOut, User, CheckCircle,
+  Clock, XCircle, Lock, ChevronDown, ChevronUp, Pencil, X, Calendar, Upload, Loader2,
+} from 'lucide-react';
+import { apiFetch, API_BASE } from '@/lib/api';
+import Footer from '@/components/Footer';
+
+type StatusEtapa = 'PENDENTE' | 'EM_ANALISE' | 'APROVADO' | 'REPROVADO';
+
+type Etapa = {
+  id: string | null;
+  ordem: number;
+  tipo: string;
+  label: string;
+  status: StatusEtapa;
+  statusPublicado: StatusEtapa | null;
+  pontuacao: number | null;
+  observacao: string | null;
+  observacaoPublicada: string | null;
+  recurso: string | null;
+  docChecks: string | null;
+};
+
+type Inscricao = { id: string; protocolo: string; createdAt: string };
+
+type Candidato = {
+  id: string; nome: string; cpf: string; rg: string | null; orgaoEmissor: string | null;
+  dataNasc: string | null; sexo: string | null; estadoCivil: string | null;
+  email: string; telefone: string;
+  cep: string | null; logradouro: string | null; numero: string | null;
+  bairro: string | null; cidade: string | null;
+  vinculo: string | null; cargo: string; escola: string;
+  matricula: string | null; municipio: string;
+  tempoServico: string | null; formacao: string | null; especializacao: string | null;
+  docRg: string | null; docCpf: string | null; docResidencia: string | null;
+  docTituloEleitor: string | null; docQuitacao: string | null; docReservista: string | null;
+  docDiploma: string | null; docPosGraduacao: string | null; docLotacao: string | null;
+};
+
+const DOCS_INFO: { field: keyof Candidato; label: string }[] = [
+  { field: 'docRg',            label: 'RG ou CNH' },
+  { field: 'docCpf',           label: 'CPF' },
+  { field: 'docResidencia',    label: 'Comprovante de Residência' },
+  { field: 'docTituloEleitor', label: 'Título de Eleitor' },
+  { field: 'docQuitacao',      label: 'Quitação Eleitoral' },
+  { field: 'docReservista',    label: 'Carteira de Reservista' },
+  { field: 'docDiploma',       label: 'Diploma' },
+  { field: 'docPosGraduacao',  label: 'Certificado de Pós-grad.' },
+  { field: 'docLotacao',       label: 'Comprovante de Lotação' },
+];
+
+type DashData = { candidato: Candidato; inscricao: Inscricao | null; etapas: Etapa[]; docsComProblema?: string[] };
+
+const ETAPA_CRONOGRAMA: Record<string, { label: string; data: string }[]> = {
+  INSCRICAO: [
+    { label: 'Período de inscrições', data: '04 a 09/06/2026' },
+  ],
+  HABILITACAO_DOCUMENTAL: [
+    { label: 'Homologação das inscrições', data: '10/06/2026' },
+  ],
+  AVALIACAO_COGNITIVA: [
+    { label: 'Realização da prova objetiva', data: '08/07/2026' },
+    { label: 'Divulgação do resultado', data: '21/07/2026' },
+  ],
+  QUALIFICACAO_CURRICULAR: [
+    { label: 'Envio dos documentos curriculares', data: '22 a 26/07/2026' },
+    { label: 'Análise da documentação', data: '28 a 31/07/2026' },
+    { label: 'Resultado preliminar', data: '04/08/2026' },
+  ],
+  PLANO_GESTAO: [
+    { label: 'Envio do plano de gestão escolar', data: '22 a 26/07/2026' },
+    { label: 'Análise do plano de gestão', data: '28 a 31/07/2026' },
+    { label: 'Resultado preliminar', data: '04/08/2026' },
+  ],
+  RESULTADO_FINAL: [],
+  CERTIFICACAO: [],
+};
+
+const ETAPA_ICONS: Record<string, React.ElementType> = {
+  HABILITACAO_DOCUMENTAL: FileText,
+  AVALIACAO_COGNITIVA: Brain,
+  QUALIFICACAO_CURRICULAR: GraduationCap,
+  PLANO_GESTAO: ClipboardList,
+  RESULTADO_FINAL: BarChart,
+  CERTIFICACAO: Award,
+};
+
+function maskCpf(cpf: string) {
+  return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.$2.$3-**');
+}
+
+const PRAZO_INSCRICAO = new Date('2026-06-09T23:59:59-03:00');
+
+export default function CandidatoPage() {
+  const router = useRouter();
+  const dentrodoPrazo = new Date() <= PRAZO_INSCRICAO;
+  const [data, setData] = useState<DashData | null>(null);
+  const singleUploadRef = useRef<HTMLInputElement>(null);
+  const singleUploadField = useRef<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [expandedEtapa, setExpandedEtapa] = useState<string | null>('INSCRICAO');
+  const [editando, setEditando] = useState(false);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [docModal, setDocModal] = useState(false);
+  const [docFiles, setDocFiles] = useState<Record<string, File | null>>({});
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadError, setDocUploadError] = useState('');
+  const [docUploadOk, setDocUploadOk] = useState(false);
+  const [singleUploading, setSingleUploading] = useState<string | null>(null);
+  const [homologacaoPublicada, setHomologacaoPublicada] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('meritus_token');
+    if (!token) { router.replace('/login'); return; }
+
+    Promise.all([
+      apiFetch('/api/candidato/me', { headers: { Authorization: `Bearer ${token}` } }),
+      apiFetch('/api/inscricao/homologacao-status'),
+    ])
+      .then(async ([rMe, rH]) => {
+        if (!rMe.ok) { localStorage.removeItem('meritus_token'); router.replace('/login'); return; }
+        const d = await rMe.json();
+        if (d) setData(d);
+        if (rH.ok) { const h = await rH.json(); setHomologacaoPublicada(h.publicada); }
+      })
+      .catch(() => setError('Erro ao carregar os dados. Tente novamente.'))
+      .finally(() => setLoading(false));
+  }, [router]);
+
+
+  const openEdit = (c: Candidato) => {
+    setEditForm({
+      nome: c.nome, rg: c.rg ?? '', orgaoEmissor: c.orgaoEmissor ?? '',
+      telefone: c.telefone, email: c.email,
+      cep: c.cep ?? '', logradouro: c.logradouro ?? '', numero: c.numero ?? '',
+      bairro: c.bairro ?? '', cidade: c.cidade ?? '',
+      vinculo: c.vinculo ?? '', cargo: c.cargo, escola: c.escola,
+      matricula: c.matricula ?? '', municipio: c.municipio,
+      tempoServico: c.tempoServico ?? '', formacao: c.formacao ?? '',
+      especializacao: c.especializacao ?? '',
+    });
+    setEditError('');
+    setEditando(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setEditSaving(true);
+    setEditError('');
+    const token = localStorage.getItem('meritus_token');
+    try {
+      const res = await apiFetch('/api/candidato/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(editForm),
+      });
+      if (!res.ok) { setEditError('Erro ao salvar. Tente novamente.'); return; }
+      setData(prev => prev ? { ...prev, candidato: { ...prev.candidato, ...editForm } } : null);
+      setEditando(false);
+    } catch {
+      setEditError('Erro de conexão.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleUploadDocs = async () => {
+    const hasFile = Object.values(docFiles).some(f => f !== null);
+    if (!hasFile) { setDocUploadError('Selecione pelo menos um arquivo.'); return; }
+    setDocUploading(true);
+    setDocUploadError('');
+    const token = localStorage.getItem('meritus_token');
+    const form = new FormData();
+    for (const [field, file] of Object.entries(docFiles)) {
+      if (file) form.append(field, file);
+    }
+    try {
+      const res = await apiFetch('/api/candidato/docs', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      if (!res.ok) { setDocUploadError('Erro ao enviar. Tente novamente.'); return; }
+      const updated = await res.json();
+      setData(prev => prev ? { ...prev, candidato: { ...prev.candidato, ...updated } } : null);
+      setDocFiles({});
+      setDocModal(false);
+      setDocUploadOk(true);
+    } catch {
+      setDocUploadError('Erro de conexão.');
+    } finally {
+      setDocUploading(false);
+    }
+  };
+
+  const handleSingleDoc = (field: string) => {
+    singleUploadField.current = field;
+    singleUploadRef.current?.click();
+  };
+
+  const handleSingleDocChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const field = singleUploadField.current;
+    setSingleUploading(field);
+    const token = localStorage.getItem('meritus_token');
+    const fd = new FormData();
+    fd.append(field, file);
+    try {
+      const res = await apiFetch('/api/candidato/docs', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (!res.ok) { setSingleUploading(null); return; }
+      const updated = await res.json();
+      setData(prev => prev ? { ...prev, candidato: { ...prev.candidato, ...updated } } : null);
+      setDocUploadOk(true);
+    } catch { /* silently fail */ }
+    setSingleUploading(null);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('meritus_token');
+    localStorage.removeItem('meritus_candidato');
+    router.replace('/login');
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f4f6f8' }}>
+      <div className="text-center">
+        <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm text-gray-500">Carregando sua área...</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#f4f6f8' }}>
+      <div className="text-center max-w-sm">
+        <p className="text-red-600 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg text-white text-sm" style={{ background: '#001b3d' }}>
+          Tentar novamente
+        </button>
+      </div>
+    </div>
+  );
+
+  if (!data) return null;
+
+  const { candidato, inscricao, etapas } = data;
+
+  const inscricaoEtapa = etapas.find(e => e.tipo === 'INSCRICAO');
+  const inscricaoStatusPublicado = homologacaoPublicada
+    ? (inscricaoEtapa?.statusPublicado ?? inscricaoEtapa?.status ?? 'PENDENTE')
+    : 'PENDENTE';
+  const inscricaoReprovada = inscricaoStatusPublicado === 'REPROVADO';
+  const ETAPAS_PROCESSO = ['AVALIACAO_COGNITIVA', 'QUALIFICACAO_CURRICULAR', 'PLANO_GESTAO', 'RESULTADO_FINAL', 'CERTIFICACAO'];
+  const etapasProcesso = etapas.filter(e => ETAPAS_PROCESSO.includes(e.tipo));
+  const allPending = !homologacaoPublicada || etapas.every(e => e.status === 'PENDENTE');
+  const aprovadas  = etapasProcesso.filter(e => e.status === 'APROVADO').length;
+  const reprovadas = etapasProcesso.filter(e => e.status === 'REPROVADO').length;
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#f4f6f8' }}>
+
+      {/* Header */}
+      <header style={{ background: '#001b3d', borderBottom: '3px solid #ffd21f' }}>
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Meritus" width={32} height={32} className="object-contain" />
+            <span className="font-bold text-white text-lg">Meritus</span>
+            <span className="hidden sm:inline text-xs text-white/50 ml-1">— Área do Candidato</span>
+          </div>
+          <button onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+            <LogOut className="w-4 h-4" /> Sair
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+        {/* Notificação: inscrição reprovada — só aparece após homologação publicada */}
+        {inscricaoReprovada && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 flex gap-4 shadow-sm">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-100">
+              <XCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-red-700 mb-1">Inscrição reprovada pela comissão</p>
+              {(inscricaoEtapa?.observacaoPublicada ?? inscricaoEtapa?.observacao) ? (
+                <p className="text-sm text-red-600 leading-relaxed">
+                  <span className="font-semibold">Justificativa: </span>{inscricaoEtapa?.observacaoPublicada ?? inscricaoEtapa?.observacao}
+                </p>
+              ) : (
+                <p className="text-sm text-red-500">Entre em contato com a secretaria para mais informações.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Card do candidato */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#001b3d' }}>
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold truncate" style={{ color: '#001b3d' }}>{candidato.nome}</h2>
+              <p className="text-sm text-gray-500">{maskCpf(candidato.cpf)}</p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                <span className="text-gray-400">Cargo: <span className="text-gray-700 font-medium">{candidato.cargo}</span></span>
+                <span className="text-gray-400">Escola: <span className="text-gray-700 font-medium">{candidato.escola}</span></span>
+                <span className="text-gray-400">Matrícula: <span className="text-gray-700 font-medium">{candidato.matricula || '—'}</span></span>
+                <span className="text-gray-400">Município: <span className="text-gray-700 font-medium">{candidato.municipio}</span></span>
+              </div>
+              <button
+                onClick={() => dentrodoPrazo && openEdit(candidato)}
+                disabled={!dentrodoPrazo}
+                title={!dentrodoPrazo ? 'Prazo de inscrições encerrado' : undefined}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Editar dados da inscrição
+              </button>
+            </div>
+            {inscricao && (
+              <div className="hidden sm:block text-right flex-shrink-0">
+                <p className="text-xs text-gray-400 uppercase tracking-wider">Protocolo</p>
+                <p className="text-xs font-mono font-semibold text-gray-700 mt-0.5">{inscricao.protocolo}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(inscricao.createdAt).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Banner: documentos faltando */}
+        {(() => {
+          const problema = data.docsComProblema ?? [];
+          const faltando = DOCS_INFO.filter(({ field }) => {
+            if (field === 'docReservista' && candidato.sexo !== 'Masculino') return false;
+            // docPosGraduacao é opcional para Pedagogia; só alerta se o backend detectou problema no arquivo
+            if (field === 'docPosGraduacao') return problema.includes(field as string);
+            return !candidato[field] || problema.includes(field as string);
+          });
+          if (faltando.length === 0 || docUploadOk) return null;
+          return (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex gap-4 shadow-sm">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-amber-100">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-amber-800 mb-1">Documentos pendentes de envio</p>
+                <p className="text-sm text-amber-700 leading-relaxed mb-3">
+                  {faltando.length} documento{faltando.length > 1 ? 's precisam' : ' precisa'} ser {faltando.length > 1 ? 'enviados' : 'enviado'} para concluir sua habilitação: <span className="font-semibold">{faltando.map(d => d.label).join(', ')}</span>.
+                </p>
+                <button
+                  onClick={() => { setDocModal(true); setDocUploadError(''); }}
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-white"
+                  style={{ background: '#001b3d' }}>
+                  Reenviar documentos
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Banner: docs enviados com sucesso */}
+        {docUploadOk && (
+          <div className="rounded-2xl border border-green-200 bg-green-50 p-4 flex items-center gap-3 shadow-sm">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <p className="text-sm font-semibold text-green-700">Documentos enviados com sucesso! Aguardando análise da comissão.</p>
+          </div>
+        )}
+
+        {/* Banner: aguardando comissão */}
+        {allPending && (
+          <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-6 text-center">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#f0f7ff' }}>
+              <Clock className="w-7 h-7" style={{ color: '#38b6ff' }} />
+            </div>
+            <h3 className="text-lg font-bold mb-1" style={{ color: '#001b3d' }}>
+              Inscrição recebida com sucesso!
+            </h3>
+            <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
+              Você cumpriu todos os requisitos e seus documentos foram enviados.
+              A inscrição está agora sob análise da <strong>comissão responsável</strong>.
+              Acompanhe o andamento por esta página.
+            </p>
+            {inscricao && (
+              <div className="inline-block mt-4 px-5 py-2 rounded-xl" style={{ background: '#f0f7ff', border: '1.5px solid #38b6ff' }}>
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Protocolo de inscrição</p>
+                <p className="text-sm font-mono font-bold" style={{ color: '#001b3d' }}>{inscricao.protocolo}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Stats — só quando processo em andamento */}
+        {!allPending && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+              <p className="text-2xl font-bold text-green-700">{aprovadas}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Etapas aprovadas</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+              <p className="text-2xl font-bold text-red-600">{reprovadas}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Etapas reprovadas</p>
+            </div>
+            <div className="col-span-2 sm:col-span-1 bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+              <p className="text-2xl font-bold" style={{ color: '#001b3d' }}>{aprovadas}/5</p>
+              <p className="text-xs text-gray-500 mt-0.5">Progresso total</p>
+            </div>
+          </div>
+        )}
+
+        {/* Etapas — sempre visíveis e sempre expansíveis */}
+        <div className="space-y-3">
+          <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Acompanhamento das Etapas</h3>
+
+          {etapas.map((etapa) => {
+            const Icon = ETAPA_ICONS[etapa.tipo] ?? FileText;
+
+            const ehHabilitacaoOculta = etapa.tipo === 'HABILITACAO_DOCUMENTAL' || etapa.tipo === 'INSCRICAO';
+
+            // Para INSCRICAO e HABILITACAO: mostra snapshot publicado; antes de publicar, oculta
+            const statusVisivel: StatusEtapa = ehHabilitacaoOculta
+              ? (homologacaoPublicada ? (etapa.statusPublicado ?? etapa.status) : 'PENDENTE')
+              : etapa.status;
+
+            const observacaoVisivel = ehHabilitacaoOculta
+              ? (homologacaoPublicada ? (etapa.observacaoPublicada ?? etapa.observacao) : null)
+              : etapa.observacao;
+
+            const isPendente = statusVisivel === 'PENDENTE';
+
+            const cfgBase = {
+              PENDENTE:   { label: 'Aguardando habilitação', color: 'text-gray-400',  bg: 'bg-gray-50',   border: 'border-gray-100',  icon: Lock },
+              EM_ANALISE: { label: 'Em análise',             color: 'text-amber-600', bg: 'bg-amber-50',  border: 'border-amber-200', icon: Clock },
+              APROVADO:   { label: 'Habilitado',             color: 'text-green-700', bg: 'bg-green-50',  border: 'border-green-200', icon: CheckCircle },
+              REPROVADO:  { label: 'Inabilitado',            color: 'text-red-600',   bg: 'bg-red-50',    border: 'border-red-200',   icon: XCircle },
+            }[statusVisivel];
+
+            const cfg = (() => {
+              if (etapa.tipo === 'INSCRICAO' && !homologacaoPublicada)
+                return { label: 'Inscrito', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: CheckCircle };
+              if (etapa.tipo === 'INSCRICAO')
+                return { ...cfgBase, label: 'Inscrito', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: CheckCircle };
+              if (etapa.tipo === 'RESULTADO_FINAL')
+                return { label: 'Aguardando divulgação', color: 'text-gray-400', bg: 'bg-gray-50', border: 'border-gray-100', icon: Lock };
+              return cfgBase;
+            })();
+
+            const StatusIcon = cfg.icon;
+            const isReprovado = statusVisivel === 'REPROVADO';
+            const isExpanded = expandedEtapa === etapa.tipo;
+
+            const etapaDocs = etapa.tipo === 'HABILITACAO_DOCUMENTAL'
+              ? DOCS_INFO.filter(({ field }) => !!candidato[field])
+              : [];
+
+            return (
+              <div key={etapa.tipo} className={`bg-white rounded-xl border shadow-sm ${cfg.border}`}>
+
+                {/* Cabeçalho do card */}
+                <div
+                  className="p-4 flex items-center gap-4 cursor-pointer select-none"
+                  onClick={() => setExpandedEtapa(isExpanded ? null : etapa.tipo)}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPendente ? 'bg-gray-200' : ''}`}
+                    style={!isPendente ? { background: '#001b3d' } : {}}>
+                    <Icon className={`w-5 h-5 ${isPendente ? 'text-gray-400' : 'text-white'}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 font-mono">0{etapa.ordem}</span>
+                      <span className={`text-sm font-semibold ${isPendente ? 'text-gray-400' : 'text-gray-800'}`}>
+                        {etapa.label}
+                      </span>
+                    </div>
+                    {(ETAPA_CRONOGRAMA[etapa.tipo]?.length ?? 0) > 0 && (
+                      <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        {ETAPA_CRONOGRAMA[etapa.tipo][0].data}
+                        {ETAPA_CRONOGRAMA[etapa.tipo].length > 1 && (
+                          <> · {ETAPA_CRONOGRAMA[etapa.tipo][ETAPA_CRONOGRAMA[etapa.tipo].length - 1].data}</>
+                        )}
+                      </p>
+                    )}
+                    {etapa.pontuacao !== null && etapa.tipo !== 'INSCRICAO' && etapa.tipo !== 'HABILITACAO_DOCUMENTAL' && etapa.tipo !== 'RESULTADO_FINAL' && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Pontuação: <span className="font-semibold text-gray-700">{etapa.pontuacao} pts</span>
+                      </p>
+                    )}
+                  </div>
+                  <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                    <StatusIcon className="w-3.5 h-3.5" />
+                    {cfg.label}
+                  </span>
+                  {isExpanded
+                    ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  }
+                </div>
+
+                {/* Painel expandido */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 px-4 py-3 space-y-3">
+
+                    {/* Cronograma da etapa */}
+                    {(ETAPA_CRONOGRAMA[etapa.tipo]?.length ?? 0) > 0 && (
+                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" /> Cronograma
+                        </p>
+                        <div className="space-y-1">
+                          {ETAPA_CRONOGRAMA[etapa.tipo].map(item => (
+                            <div key={item.label} className="flex items-center justify-between gap-3">
+                              <span className="text-xs text-gray-500">{item.label}</span>
+                              <span className="text-xs font-semibold text-gray-700 flex-shrink-0">{item.data}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* INSCRICAO: exibe resumo + documentos enviados */}
+                    {etapa.tipo === 'INSCRICAO' && inscricao && (
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Detalhes da Inscrição</p>
+                          <div className="px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-100 space-y-1.5">
+                            <p className="text-xs text-gray-500">Protocolo: <span className="font-mono font-bold text-gray-800">{inscricao.protocolo}</span></p>
+                            <p className="text-xs text-gray-500">Data: <span className="text-gray-700">{new Date(inscricao.createdAt).toLocaleDateString('pt-BR')}</span></p>
+                            <p className="text-xs text-gray-500">Nome: <span className="text-gray-700">{candidato.nome}</span></p>
+                            <p className="text-xs text-gray-500">Escola: <span className="text-gray-700">{candidato.escola}</span></p>
+                            <p className="text-xs text-gray-500">Cargo: <span className="text-gray-700">{candidato.cargo}</span></p>
+                            <p className="text-xs text-gray-500">Município: <span className="text-gray-700">{candidato.municipio}</span></p>
+                          </div>
+                        </div>
+                        {(() => {
+                          const docs = DOCS_INFO.filter(({ field }) => !!candidato[field]);
+                          return docs.length > 0 ? (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Documentos enviados</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {docs.map(({ field, label }) => (
+                                  <div key={field} className="flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 overflow-hidden">
+                                    <a
+                                      href={`${API_BASE}/api/uploads/${candidato[field]}`}
+                                      target="_blank" rel="noopener noreferrer"
+                                      className="flex-1 flex items-center gap-2 px-3 py-2 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors min-w-0"
+                                    >
+                                      <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                                      <span className="truncate">{label}</span>
+                                    </a>
+                                    {dentrodoPrazo && (
+                                      <button
+                                        onClick={() => handleSingleDoc(field as string)}
+                                        disabled={singleUploading === field}
+                                        className="px-3 py-2 text-xs font-semibold text-blue-600 hover:text-blue-900 hover:bg-blue-100 transition-colors flex-shrink-0 border-l border-blue-100 disabled:opacity-50 flex items-center gap-1"
+                                      >
+                                        {singleUploading === field && <Loader2 className="w-3 h-3 animate-spin" />}
+                                        Atualizar
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+
+                    {/* HABILITACAO_DOCUMENTAL: documentos com status de validação do admin */}
+                    {etapaDocs.length > 0 && (() => {
+                      const checks: Record<string, boolean> = etapa.docChecks
+                        ? JSON.parse(etapa.docChecks) : {};
+                      const hasChecks = homologacaoPublicada && Object.keys(checks).length > 0;
+                      return (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Documentos enviados</p>
+                          <div className="space-y-1.5">
+                            {etapaDocs.map(({ field, label }) => {
+                              const checkVal = checks[field as string];
+                              const hasCheck = hasChecks && checkVal !== undefined;
+                              return (
+                                <div key={field} className={`flex items-center gap-1 rounded-lg border overflow-hidden ${
+                                  hasCheck && checkVal  ? 'border-green-200' :
+                                  hasCheck && !checkVal ? 'border-red-200'   :
+                                  'border-blue-100'
+                                }`}>
+                                  <div className={`flex-1 flex items-center gap-2 px-3 py-2 text-xs font-medium min-w-0 ${
+                                      hasCheck && checkVal  ? 'bg-green-50 text-green-700' :
+                                      hasCheck && !checkVal ? 'bg-red-50 text-red-700'     :
+                                      'bg-blue-50 text-blue-700'
+                                    }`}>
+                                    <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <span className="truncate">{label}</span>
+                                  </div>
+                                  {hasCheck && (
+                                    <span className={`px-2.5 text-sm font-bold flex-shrink-0 ${checkVal ? 'text-green-600' : 'text-red-500'}`}>
+                                      {checkVal ? '✓' : '✗'}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {isPendente && !hasChecks && (
+                            <p className="text-xs text-gray-400 mt-2">Documentos aguardando validação pela comissão.</p>
+                          )}
+                          {hasChecks && (
+                            <p className="text-xs text-gray-400 mt-2">
+                              ✓ = documento válido &nbsp;·&nbsp; ✗ = documento com problema
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Observação da comissão (etapas aprovadas/em análise) */}
+                    {observacaoVisivel && !isReprovado && (
+                      <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+                        <p className="text-xs font-semibold text-blue-600 mb-0.5">Observação da comissão:</p>
+                        <p className="text-sm text-blue-700">{observacaoVisivel}</p>
+                      </div>
+                    )}
+
+                    {/* PENDENTE sem documentos — etapas futuras */}
+                    {isPendente && etapaDocs.length === 0 && etapa.tipo !== 'INSCRICAO' && (
+                      <p className="text-xs text-gray-400">Esta etapa ainda não foi iniciada. Aguardando conclusão das etapas anteriores.</p>
+                    )}
+
+                    {/* Aprovada/Em análise sem obs nem docs */}
+                    {!isPendente && !isReprovado && etapaDocs.length === 0 && !etapa.observacao && etapa.tipo !== 'INSCRICAO' && (
+                      <p className="text-xs text-gray-400">Nenhuma informação adicional registrada nesta etapa.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Justificativa de inabilitação — usa sempre o snapshot publicado */}
+                {isReprovado && observacaoVisivel && (
+                  <div className="border-t border-red-100 px-4 pb-4 pt-3">
+                    <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
+                      <p className="text-xs font-semibold text-red-600 mb-0.5">Justificativa da comissão:</p>
+                      <p className="text-sm text-red-700 leading-relaxed">{observacaoVisivel}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+      </main>
+
+      {/* Modal de edição */}
+      {editando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={e => { if (e.target === e.currentTarget) setEditando(false); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
+
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+              <div>
+                <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Editar dados da inscrição</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Documentos não podem ser alterados após o envio.</p>
+              </div>
+              <button onClick={() => setEditando(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              {/* Dados Pessoais */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Dados Pessoais</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'nome',        label: 'Nome completo' },
+                    { key: 'rg',          label: 'RG / CNH' },
+                    { key: 'orgaoEmissor',label: 'Órgão emissor' },
+                    { key: 'telefone',    label: 'Telefone' },
+                    { key: 'email',       label: 'E-mail' },
+                    { key: 'cep',         label: 'CEP' },
+                    { key: 'logradouro',  label: 'Logradouro' },
+                    { key: 'numero',      label: 'Número' },
+                    { key: 'bairro',      label: 'Bairro' },
+                    { key: 'cidade',      label: 'Cidade' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        value={editForm[key] ?? ''}
+                        onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dados Funcionais */}
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Dados Funcionais</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de Vínculo</label>
+                    <select
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      value={editForm.vinculo ?? ''}
+                      onChange={e => setEditForm(f => ({ ...f, vinculo: e.target.value, ...(e.target.value === 'Temporário' ? { matricula: '' } : {}) }))}
+                    >
+                      <option value="">Selecione</option>
+                      <option>Efetivo</option>
+                      <option>Contratado</option>
+                      <option>Temporário</option>
+                    </select>
+                  </div>
+                  {editForm.vinculo !== 'Temporário' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Matrícula</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        value={editForm.matricula ?? ''}
+                        onChange={e => setEditForm(f => ({ ...f, matricula: e.target.value }))}
+                      />
+                    </div>
+                  )}
+                  {[
+                    { key: 'cargo',          label: 'Cargo' },
+                    { key: 'escola',         label: 'Escola' },
+                    { key: 'municipio',      label: 'Município' },
+                    { key: 'tempoServico',   label: 'Tempo de Serviço' },
+                    { key: 'formacao',       label: 'Formação' },
+                    { key: 'especializacao', label: 'Especialização' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        value={editForm[key] ?? ''}
+                        onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Documentos — bloqueados */}
+              <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 flex items-center gap-3">
+                <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <p className="text-xs text-gray-400">Os documentos enviados estão em análise pela comissão e não podem ser substituídos.</p>
+              </div>
+
+              {editError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{editError}</p>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex gap-3 rounded-b-2xl">
+              <button onClick={() => setEditando(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleSaveEdit} disabled={editSaving}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity"
+                style={{ background: '#001b3d' }}>
+                {editSaving ? 'Salvando…' : 'Salvar alterações'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de reenvio de documentos */}
+      {docModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={e => { if (e.target === e.currentTarget) setDocModal(false); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+              <div>
+                <h3 className="text-base font-bold" style={{ color: '#001b3d' }}>Reenviar Documentos</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Selecione os PDFs que deseja enviar. Máximo 20 MB por arquivo.</p>
+              </div>
+              <button onClick={() => setDocModal(false)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-3">
+              {DOCS_INFO.filter(({ field }) => {
+                if (field === 'docReservista') return candidato.sexo === 'Masculino';
+                if (field === 'docPosGraduacao') return !!(candidato.especializacao && candidato.especializacao !== 'Não');
+                return true;
+              }).map(({ field, label }) => {
+                const jaEnviado = !!candidato[field];
+                const temProblema = (data.docsComProblema ?? []).includes(field as string);
+                const novoArquivo = docFiles[field] ?? null;
+
+                const cardClass =
+                  novoArquivo  ? 'border-green-200 bg-green-50' :
+                  temProblema  ? 'border-red-200 bg-red-50' :
+                  jaEnviado    ? 'border-green-200 bg-green-50' :
+                                 'border-amber-200 bg-amber-50';
+
+                const iconClass =
+                  novoArquivo  ? 'text-green-600' :
+                  temProblema  ? 'text-red-600' :
+                  jaEnviado    ? 'text-green-600' :
+                                 'text-amber-600';
+
+                return (
+                  <div key={field} className={`rounded-xl border px-4 py-3 ${cardClass}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className={`w-4 h-4 flex-shrink-0 ${iconClass}`} />
+                        <span className="text-sm font-medium text-gray-700 truncate">{label}</span>
+                        {novoArquivo && (
+                          <span className="text-xs text-green-600 font-semibold flex-shrink-0 truncate max-w-[100px]">✓ {novoArquivo.name}</span>
+                        )}
+                        {!novoArquivo && temProblema && (
+                          <span className="text-xs text-red-600 font-semibold flex-shrink-0">⚠ reenviar</span>
+                        )}
+                        {!novoArquivo && !temProblema && jaEnviado && (
+                          <span className="text-xs text-green-600 font-semibold flex-shrink-0">✓ enviado</span>
+                        )}
+                      </div>
+                      <label className="flex-shrink-0 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors">
+                        {novoArquivo ? 'Trocar' : temProblema ? 'Reenviar' : jaEnviado ? 'Substituir' : 'Selecionar'}
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          className="hidden"
+                          onChange={e => setDocFiles(f => ({ ...f, [field]: e.target.files?.[0] ?? null }))}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+              {docUploadError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{docUploadError}</p>
+              )}
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex gap-3 rounded-b-2xl">
+              <button onClick={() => setDocModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleUploadDocs} disabled={docUploading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
+                style={{ background: '#001b3d' }}>
+                {docUploading ? 'Enviando…' : 'Enviar documentos'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <input
+        ref={singleUploadRef}
+        type="file"
+        accept=".pdf"
+        className="hidden"
+        onChange={handleSingleDocChange}
+      />
+      <Footer />
+    </div>
+  );
+}

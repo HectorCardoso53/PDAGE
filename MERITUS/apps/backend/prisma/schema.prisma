@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Candidato {
+  id            String      @id @default(cuid())
+  cpf           String      @unique
+  dataNasc      DateTime
+  nome          String
+  email         String
+  telefone      String
+  sexo          String
+  estadoCivil   String?
+  rg            String?
+  orgaoEmissor  String?
+  cep           String?
+  logradouro    String?
+  numero        String?
+  bairro        String?
+  cidade        String?
+  senha         String?
+  vinculo       String?
+  cargo         String
+  escola        String
+  matricula     String?
+  municipio     String      @default("Oriximiná")
+  tempoServico  String?
+  formacao      String?
+  especializacao String?
+  docRg            String?
+  docCpf           String?
+  docResidencia    String?
+  docTituloEleitor String?
+  docQuitacao      String?
+  docReservista    String?
+  docDiploma       String?
+  docPosGraduacao  String?
+  docLotacao       String?
+  inscricoes    Inscricao[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model MembroComissao {
+  id        String     @id @default(cuid())
+  nome      String
+  cpf       String     @unique
+  email     String     @unique
+  senhaHash String
+  ativo     Boolean    @default(true)
+  permissao String     @default("AVALIADOR")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  logs      AuditLog[]
+}
+
+model AuditLog {
+  id            String          @id @default(cuid())
+  membroId      String?
+  membro        MembroComissao? @relation(fields: [membroId], references: [id])
+  autorNome     String
+  autorRole     String
+  acao          String
+  etapaTipo     String?
+  candidatoNome String?
+  dadosAntes    String?
+  dadosDepois   String?
+  createdAt     DateTime        @default(now())
+}
+
+model Inscricao {
+  id          String        @id @default(cuid())
+  protocolo   String        @unique
+  candidatoId String
+  candidato   Candidato     @relation(fields: [candidatoId], references: [id])
+  etapas      EtapaStatus[]
+  createdAt   DateTime      @default(now())
+}
+
+model EtapaStatus {
+  id                  String      @id @default(cuid())
+  inscricaoId         String
+  inscricao           Inscricao   @relation(fields: [inscricaoId], references: [id])
+  etapa               EtapaTipo
+  status              StatusEtapa @default(PENDENTE)
+  statusPublicado     StatusEtapa?
+  pontuacao           Float?
+  observacao          String?
+  observacaoPublicada String?
+  recurso             String?
+  docChecks           String?
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([inscricaoId, etapa])
+}
+
+enum EtapaTipo {
+  INSCRICAO
+  HABILITACAO_DOCUMENTAL
+  AVALIACAO_COGNITIVA
+  QUALIFICACAO_CURRICULAR
+  PLANO_GESTAO
+  RESULTADO_FINAL
+  CERTIFICACAO
+}
+
+enum StatusEtapa {
+  PENDENTE
+  EM_ANALISE
+  APROVADO
+  REPROVADO
+}
+
+model SystemConfig {
+  key   String @id
+  value String
+}
+
+model HomologacaoPublicacao {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  tipo      String   // 'todos' | 'especifico'
+  titulo    String?
+  link      String?
+  enviados  Int      @default(0)
+  nomes     String?  // comma-separated names for 'especifico' publications
+}

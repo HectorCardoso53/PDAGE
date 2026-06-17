@@ -1,0 +1,106 @@
+services:
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: pdage-nginx
+    ports:
+      - '127.0.0.1:8091:80'
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+    networks:
+      - pdage-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'nginx', '-t']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+    container_name: pdage-frontend
+    expose:
+      - '3000'
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=/api
+    networks:
+      - pdage-network
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+    container_name: pdage-backend
+    expose:
+      - '3001'
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://pdage_user:pdage_password@postgres:5432/pdage_db
+      - JWT_SECRET=${JWT_SECRET:-change_this_in_production}
+      - CORS_ORIGIN=*
+      - ADMIN_LOGIN=${ADMIN_LOGIN:-admin}
+      - ADMIN_SENHA=${ADMIN_SENHA:-admin123}
+      - MAIL_HOST=smtp.gmail.com
+      - MAIL_PORT=587
+      - MAIL_SECURE=false
+      - MAIL_USER=${MAIL_USER:-mapadadosoriximina@gmail.com}
+      - MAIL_PASS=${MAIL_PASS}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pdage-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3001/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: pdage-postgres
+    environment:
+      - POSTGRES_USER=pdage_user
+      - POSTGRES_PASSWORD=pdage_password
+      - POSTGRES_DB=pdage_db
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - pdage-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pdage_user -d pdage_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  pdage-network:
+    driver: bridge
+    name: pdage-network
+
+volumes:
+  postgres_data:
+    name: pdage-postgres-data
+  uploads_data:
+    name: pdage-uploads-data

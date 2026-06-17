@@ -1,0 +1,1 @@
+TRUNCATE TABLE "EtapaStatus", "Inscricao", "Candidato" RESTART IDENTITY CASCADE;
