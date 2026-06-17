@@ -271,6 +271,8 @@ export default function AdminPage() {
   const [pubTitulo, setPubTitulo] = useState('');
   const [reviewToast, setReviewToast] = useState<{ nome: string; acao: 'habilitado' | 'inabilitado' } | null>(null);
   const [historicoSearch, setHistoricoSearch] = useState('');
+  const [provaPage, setProvaPage] = useState(1);
+  const [provaSearch, setProvaSearch] = useState('');
 
   const applyDocCheck = (fieldKey: string, newVal: boolean | null, candidato: AdminCandidato) => {
     setDocChecks(prev => {
@@ -467,6 +469,12 @@ export default function AdminPage() {
   const handleLogout = () => {
     localStorage.removeItem('meritus_admin_token');
     router.replace('/admin/login');
+  };
+
+  const openProva = (c: AdminCandidato) => {
+    const etapa = c.etapas.find(e => e.etapa === 'AVALIACAO_COGNITIVA');
+    setSelected(c);
+    if (etapa) startEdit(etapa);
   };
 
   const startEdit = (etapa: EtapaAdmin) => {
@@ -718,6 +726,24 @@ export default function AdminPage() {
     : revisados;
   const revisadosTotalPages = Math.max(1, Math.ceil(revisadosFiltrados.length / PAGE_SIZE));
   const revisadosSlice = revisadosFiltrados.slice((revisadosPage - 1) * PAGE_SIZE, revisadosPage * PAGE_SIZE);
+
+  const aguardandoProva = candidatos.filter(c => {
+    const hab = c.etapas.find(e => e.etapa === 'HABILITACAO_DOCUMENTAL');
+    const ava = c.etapas.find(e => e.etapa === 'AVALIACAO_COGNITIVA');
+    return hab?.status === 'APROVADO' && ['PENDENTE', 'EM_ANALISE'].includes(ava?.status ?? 'PENDENTE');
+  });
+  const provaRealizada = candidatos.filter(c => {
+    const ava = c.etapas.find(e => e.etapa === 'AVALIACAO_COGNITIVA');
+    return ava?.status === 'APROVADO' || ava?.status === 'REPROVADO';
+  });
+  const provaRealizadaFiltrada = provaSearch.trim()
+    ? provaRealizada.filter(c => {
+        const q = provaSearch.toLowerCase();
+        return c.nome.toLowerCase().includes(q) || c.cpf.includes(q) || c.escola.toLowerCase().includes(q);
+      })
+    : provaRealizada;
+  const provaTotalPages = Math.max(1, Math.ceil(provaRealizadaFiltrada.length / PAGE_SIZE));
+  const provaSlice = provaRealizadaFiltrada.slice((provaPage - 1) * PAGE_SIZE, provaPage * PAGE_SIZE);
 
   const handlePrintReport = () => {
     const comResultado = candidatos
@@ -1419,6 +1445,113 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+
+            {/* ── Prova Objetiva ─────────────────────────────────────────── */}
+            {(aguardandoProva.length > 0 || provaRealizada.length > 0) && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-yellow-200 flex items-center justify-between" style={{ background: '#001b3d' }}>
+                  <div>
+                    <h2 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-yellow-300" />
+                      Prova Objetiva
+                    </h2>
+                    <p className="text-xs text-blue-200 mt-0.5">1ª fase — avaliação de conhecimentos</p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs font-bold text-white">
+                    <span className="text-yellow-300">Aguardando: {aguardandoProva.length}</span>
+                    <span>Realizadas: {provaRealizada.length}</span>
+                  </div>
+                </div>
+
+                {/* Aguardando avaliação */}
+                {aguardandoProva.length > 0 && (
+                  <div>
+                    <p className="px-6 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-yellow-50 border-b border-yellow-100">
+                      Aguardando Lançamento
+                    </p>
+                    <div className="divide-y divide-gray-50">
+                      {aguardandoProva.map(c => (
+                        <div key={c.id} className="px-6 py-4 flex items-center gap-4">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-800">{c.nome}</p>
+                            <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{c.municipio}</p>
+                          </div>
+                          <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-yellow-50 text-yellow-700 border-yellow-200 flex-shrink-0">
+                            Pendente
+                          </span>
+                          <button
+                            onClick={() => openProva(c)}
+                            className="px-4 py-2 rounded-lg text-xs font-bold text-white flex-shrink-0"
+                            style={{ background: '#001b3d' }}>
+                            Lançar Nota
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Realizadas */}
+                {provaRealizada.length > 0 && (
+                  <div className={aguardandoProva.length > 0 ? 'border-t border-gray-100' : ''}>
+                    <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-3">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex-1">
+                        Notas Lançadas
+                      </p>
+                      <input
+                        type="text"
+                        placeholder="Buscar..."
+                        value={provaSearch}
+                        onChange={e => { setProvaSearch(e.target.value); setProvaPage(1); }}
+                        className="px-3 py-1.5 rounded-lg text-xs text-gray-700 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-200 w-48"
+                      />
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {provaSlice.map(c => {
+                        const ava = c.etapas.find(e => e.etapa === 'AVALIACAO_COGNITIVA');
+                        const cfg = getStatusCfg(ava?.status ?? 'PENDENTE', 'AVALIACAO_COGNITIVA');
+                        return (
+                          <div key={c.id} className="px-6 py-4 flex items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-700">{c.nome}</p>
+                              <p className="text-xs text-gray-400">{fmtCpf(c.cpf)} · {c.cargo} · {c.escola}</p>
+                              {ava?.pontuacao !== null && ava?.pontuacao !== undefined && (
+                                <p className="text-xs font-bold mt-0.5" style={{ color: '#001b3d' }}>
+                                  Nota: {ava.pontuacao} / 100 pts
+                                </p>
+                              )}
+                            </div>
+                            <span className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+                              {cfg.label}
+                            </span>
+                            <button onClick={() => openProva(c)}
+                              className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0">
+                              Rever
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {provaTotalPages > 1 && (
+                      <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+                        <span className="text-xs text-gray-400">Página {provaPage} de {provaTotalPages}</span>
+                        <div className="flex gap-2">
+                          <button onClick={() => setProvaPage(p => Math.max(1, p - 1))} disabled={provaPage === 1}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors">
+                            ← Anterior
+                          </button>
+                          <button onClick={() => setProvaPage(p => Math.min(provaTotalPages, p + 1))} disabled={provaPage === provaTotalPages}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors">
+                            Próxima →
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Histórico */}
             {revisados.length > 0 && (
